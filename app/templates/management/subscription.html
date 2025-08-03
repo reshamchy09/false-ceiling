@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Subscriptions</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <style>
+    body { background-color: #f9f9f9; }
+    .container { margin-top: 40px; }
+    .subscription-box {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    img.qr {
+      max-width: 200px;
+      display: block;
+      margin: 0 auto 20px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="subscription-box">
+    <h3 class="text-center">Subscribe</h3>
+    <img src="qr_code.jpg" alt="QR Code" class="qr">
+     <h3 class="text-center">Resam Chaudhary</h3>
+    <div class="mb-3">
+      <label for="plan" class="form-label">Select Plan</label>
+      <select class="form-select" id="plan">
+        <option value="1">1 Month</option>
+        <option value="3">3 Months</option>
+        <option value="6">6 Months</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Subscription Price: <span id="price">Loading...</span> NPR</label>
+    </div>
+    <div class="mb-3">
+      <label for="reference" class="form-label">Reference / Transaction Code</label>
+      <input type="text" class="form-control" id="reference" required>
+    </div>
+    <div class="mb-3">
+      <label for="proof" class="form-label">Upload Payment Proof</label>
+      <input type="file" class="form-control" id="proof" required>
+    </div>
+    <button class="btn btn-success w-100" onclick="submitSubscription()">Submit Subscription</button>
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = {
+            apiKey: "AIzaSyCmJl82VktcyAZQYsMc_0Rw-2MxRNPBVUw",
+            authDomain: "shop-mgt.firebaseapp.com",
+            databaseURL: "https://shop-mgt-default-rtdb.firebaseio.com",
+            projectId: "shop-mgt",
+            storageBucket: "shop-mgt.appspot.com",
+            messagingSenderId: "577237698646",
+            appId: "1:577237698646:web:185d0aeb482eb7b70713f7",
+            measurementId: "G-D5YTD5M9HB"
+        };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const prices = {};
+
+  db.ref("subscriptionPrices").on("value", snapshot => {
+    const data = snapshot.val();
+    prices[1] = data["1"];
+    prices[3] = data["3"];
+    prices[6] = data["6"];
+    const selected = document.getElementById("plan").value;
+    document.getElementById("price").innerText = prices[selected];
+  });
+
+  document.getElementById("plan").addEventListener("change", e => {
+    document.getElementById("price").innerText = prices[e.target.value];
+  });
+
+  function submitSubscription() {
+    const plan = parseInt(document.getElementById("plan").value);
+    const reference = document.getElementById("reference").value;
+    const proof = document.getElementById("proof").files[0];
+    const id = Date.now();
+    if (!reference || !proof) return alert("All fields are required!");
+
+    const reader = new FileReader();
+    reader.onload = function () {
+      const proofData = reader.result;
+      const expiryDate = new Date();
+      expiryDate.setMonth(expiryDate.getMonth() + plan);
+
+      db.ref("subscriptions/" + id).set({ id, plan, price: prices[plan], reference, proof: proofData, status: "pending", expiry: expiryDate.toISOString() });
+      alert("Submitted! Wait for admin approval.");
+    };
+    reader.readAsDataURL(proof);
+  }
+</script>
+</body>
+</html>

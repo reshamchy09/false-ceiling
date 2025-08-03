@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Management Dashboard</title>
+    <!-- Add Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .nav-link:hover:before {
+            left: 100%;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(8px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            opacity: 0.8;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            transition: margin-left 0.3s ease;
+        }
+
+        .page {
+            display: none;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        /* Cards */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card:hover:before {
+            transform: scaleX(1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-description {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Tables */
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Status badges */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Dashboard specific styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 2rem;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-content h2 {
+            margin-bottom: 1rem;
+            color: #374151;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #374151;
+        }
+
+        /* Toggle Button for Sidebar */
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1002;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Pulse animation for cards */
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+        }
+
+        .card-animated {
+            animation: pulse 2s infinite;
+        }
+
+        /* Glassmorphism effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <button class="sidebar-toggle" aria-label="Toggle Sidebar">☰</button>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Business Pro</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-page="dashboard" aria-label="Dashboard">
+                        <span class="nav-icon">📊</span>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="inventory" aria-label="Inventory">
+                        <span class="nav-icon">📦</span>
+                        Inventory
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="sales" aria-label="Sales">
+                        <span class="nav-icon">💰</span>
+                        Sales
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="customers" aria-label="Customers">
+                        <span class="nav-icon">👥</span>
+                        Customers
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="employees" aria-label="Employees">
+                        <span class="nav-icon">👤</span>
+                        Employees
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="invoice" aria-label="Invoice and Billing">
+                        <span class="nav-icon">📄</span>
+                        Invoice & Billing
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="purchase" aria-label="Purchase">
+                        <span class="nav-icon">🛒</span>
+                        Purchase
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="expense" aria-label="Expense">
+                        <span class="nav-icon">💸</span>
+                        Expense
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="tasks" aria-label="Task Assignment">
+                        <span class="nav-icon">✅</span>
+                        Task Assignment
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="payments" aria-label="Payment Track">
+                        <span class="nav-icon">💳</span>
+                        Payment Track
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="website" aria-label="Website Management">
+                        <span class="nav-icon">🌐</span>
+                        Website Management
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="ledger" aria-label="Ledger">
+                        <span class="nav-icon">📚</span>
+                        Ledger
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="settings" aria-label="Settings">
+                        <span class="nav-icon">⚙️</span>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Page -->
+            <div id="dashboard" class="page active">
+                <div class="page-header">
+                    <h1 class="page-title">Dashboard</h1>
+                    <p class="page-subtitle">Welcome to your business overview</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="card card-animated">
+                        <div class="card-header">
+                            <div class="card-icon">💰</div>
+                            <div class="card-title">Total Revenue</div>
+                        </div>
+                        <div class="card-value">$124,500</div>
+                        <div class="card-description">+12% from last month</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📦</div>
+                            <div class="card-title">Products</div>
+                        </div>
+                        <div class="card-value">1,247</div>
+                        <div class="card-description">Items in inventory</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">👥</div>
+                            <div class="card-title">Customers</div>
+                        </div>
+                        <div class="card-value">3,891</div>
+                        <div class="card-description">Active customers</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📊</div>
+                            <div class="card-title">Orders</div>
+                        </div>
+                        <div class="card-value">542</div>
+                        <div class="card-description">This month</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Sales Overview</h3>
+                    <canvas id="salesChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Inventory Page -->
+            <div id="inventory" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Inventory Management</h1>
+                    <p class="page-subtitle">Manage your products and stock levels</p>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <button class="btn btn-primary" onclick="showAddProductForm()" aria-label="Add New Product">
+                            ➕ Add New Product
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">⚠️</div>
+                            <div class="card-title">Low Stock Alert</div>
+                        </div>
+                        <div class="card-value">23</div>
+                        <div class="card-description">Items need restocking</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Product Inventory</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Product Name</th>
+                                <th>SKU</th>
+                                <th>Category</th>
+                                <th>Stock</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Wireless Headphones</td>
+                                <td>WH-001</td>
+                                <td>Electronics</td>
+                                <td>45</td>
+                                <td>$99.99</td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Edit Wireless Headphones">Edit</button></td>
+                            </tr>
+                            <tr>
+                                <td>Smart Watch</td>
+                                <td>SW-002</td>
+                                <td>Electronics</td>
+                                <td>12</td>
+                                <td>$299.99</td>
+                                <td><span class="status-badge status-pending">Low Stock</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Edit Smart Watch">Edit</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sales Page -->
+            <div id="sales" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Sales Management</h1>
+                    <p class="page-subtitle">Track and manage all sales activities</p>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📈</div>
+                            <div class="card-title">Today's Sales</div>
+                        </div>
+                        <div class="card-value">$4,250</div>
+                        <div class="card-description">15 transactions</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🎯</div>
+                            <div class="card-title">Monthly Target</div>
+                        </div>
+                        <div class="card-value">78%</div>
+                        <div class="card-description">$78,000 / $100,000</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Recent Sales</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#ORD-001</td>
+                                <td>John Doe</td>
+                                <td>2025-05-30</td>
+                                <td>$299.99</td>
+                                <td><span class="status-badge status-active">Completed</span></td>
+                                <td><button class="btn btn-secondary" aria-label="View Order #ORD-001">View</button></td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-002</td>
+                                <td>Jane Smith</td>
+                                <td>2025-05-30</td>
+                                <td>$149.99</td>
+                                <td><span class="status-badge status-pending">Pending</span></td>
+                                <td><button class="btn btn-secondary" aria-label="View Order #ORD-002">View</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Customers Page -->
+            <div id="customers" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Customer Management</h1>
+                    <p class="page-subtitle">Manage customer relationships and data</p>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <button class="btn btn-primary" aria-label="Add New Customer">
+                            ➕ Add New Customer
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">⭐</div>
+                            <div class="card-title">VIP Customers</div>
+                        </div>
+                        <div class="card-value">87</div>
+                        <div class="card-description">Premium members</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Customer Database</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Total Orders</th>
+                                <th>Last Order</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>John Doe</td>
+                                <td>john@example.com</td>
+                                <td>+1 234 567 8900</td>
+                                <td>12</td>
+                                <td>2025-05-28</td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Edit John Doe">Edit</button></td>
+                            </tr>
+                            <tr>
+                                <td>Jane Smith</td>
+                                <td>jane@example.com</td>
+                                <td>+1 234 567 8901</td>
+                                <td>8</td>
+                                <td>2025-05-25</td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Edit Jane Smith">Edit</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Employees Page -->
+            <div id="employees" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Employee Management</h1>
+                    <p class="page-subtitle">Manage your team and workforce</p>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <button class="btn btn-primary" aria-label="Add New Employee">
+                            ➕ Add New Employee
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">👥</div>
+                            <div class="card-title">Total Employees</div>
+                        </div>
+                        <div class="card-value">42</div>
+                        <div class="card-description">Active staff members</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Employee Directory</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Position</th>
+                                <th>Department</th>
+                                <th>Email</th>
+                                <th>Hire Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Alice Johnson</td>
+                                <td>Sales Manager</td>
+                                <td>Sales</td>
+                                <td>alice@business.com</td>
+                                <td>2023-01-15</td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Edit Alice Johnson">Edit</button></td>
+                            </tr>
+                            <tr>
+                                <td>Bob Wilson</td>
+                                <td>Developer</td>
+                                <td>IT</td>
+                                <td>bob@business.com</td>
+                                <td>2023-03-20</td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Edit Bob Wilson">Edit</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Invoice & Billing Page -->
+            <div id="invoice" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Invoice & Billing</h1>
+                    <p class="page-subtitle">Create and manage invoices and billing</p>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <button class="btn btn-primary" aria-label="Create New Invoice">
+                            ➕ Create New Invoice
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">💰</div>
+                            <div class="card-title">Outstanding</div>
+                        </div>
+                        <div class="card-value">$12,450</div>
+                        <div class="card-description">Pending payments</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Recent Invoices</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>INV-001</td>
+                                <td>ABC Corp</td>
+                                <td>2025-05-28</td>
+                                <td>$2,500</td>
+                                <td>2025-06-28</td>
+                                <td><span class="status-badge status-active">Paid</span></td>
+                                <td><button class="btn btn-secondary" aria-label="View Invoice INV-001">View</button></td>
+                            </tr>
+                            <tr>
+                                <td>INV-002</td>
+                                <td>XYZ Ltd</td>
+                                <td>2025-05-29</td>
+                                <td>$1,200</td>
+                                <td>2025-06-29</td>
+                                <td><span class="status-badge status-pending">Pending</span></td>
+                                <td><button class="btn btn-secondary" aria-label="View Invoice INV-002">View</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Purchase Page -->
+            <div id="purchase" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Purchase Management</h1>
+                    <p class="page-subtitle">Manage supplier orders and purchases</p>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <button class="btn btn-primary" aria-label="Create Purchase Order">
+                            ➕ Create Purchase Order
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📦</div>
+                            <div class="card-title">Pending Orders</div>
+                        </div>
+                        <div class="card-value">18</div>
+                        <div class="card-description">Awaiting delivery</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Purchase Orders</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>PO Number</th>
+                                <th>Supplier</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Expected Delivery</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>PO-001</td>
+                                <td>Tech Supplies Inc</td>
+                                <td>2025-05-25</td>
+                                <td>$5,500</td>
+                                <td>2025-06-05</td>
+                                <td><span class="status-badge status-pending">In Transit</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Track Purchase Order PO-001">Track</button></td>
+                            </tr>
+                            <tr>
+                                <td>PO-002</td>
+                                <td>Global Electronics</td>
+                                <td>2025-05-27</td>
+                                <td>$3,200</td>
+                                <td>2025-06-10</td>
+                                <td><span class="status-badge status-active">Delivered</span></td>
+                                <td><button class="btn btn-secondary" aria-label="View Purchase Order PO-002">View</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Expense Page -->
+            <div id="expense" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Expense Management</h1>
+                    <p class="page-subtitle">Track and categorize business expenses</p>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <button class="btn btn-primary" aria-label="Add New Expense">
+                            ➕ Add New Expense
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">💸</div>
+                            <div class="card-title">Monthly Expenses</div>
+                        </div>
+                        <div class="card-value">$28,450</div>
+                        <div class="card-description">This month's total</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Recent Expenses</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Payment Method</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2025-05-30</td>
+                                <td>Office Supplies</td>
+                                <td>Operations</td>
+                                <td>$250</td>
+                                <td>Credit Card</td>
+                                <td><span class="status-badge status-active">Approved</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Edit Office Supplies Expense">Edit</button></td>
+                            </tr>
+                            <tr>
+                                <td>2025-05-29</td>
+                                <td>Marketing Campaign</td>
+                                <td>Marketing</td>
+                                <td>$1,500</td>
+                                <td>Bank Transfer</td>
+                                <td><span class="status-badge status-pending">Pending</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Edit Marketing Campaign Expense">Edit</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Task Assignment Page -->
+            <div id="tasks" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Task Assignment</h1>
+                    <p class="page-subtitle">Assign and track team tasks</p>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <button class="btn btn-primary" aria-label="Create New Task">
+                            ➕ Create New Task
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">⏰</div>
+                            <div class="card-title">Overdue Tasks</div>
+                        </div>
+                        <div class="card-value">5</div>
+                        <div class="card-description">Need attention</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Active Tasks</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th>Assigned To</th>
+                                <th>Priority</th>
+                                <th>Due Date</th>
+                                <th>Progress</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Update Website Content</td>
+                                <td>Bob Wilson</td>
+                                <td><span class="status-badge status-pending">High</span></td>
+                                <td>2025-06-02</td>
+                                <td>75%</td>
+                                <td><span class="status-badge status-pending">In Progress</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Edit Update Website Content Task">Edit</button></td>
+                            </tr>
+                            <tr>
+                                <td>Customer Survey Analysis</td>
+                                <td>Alice Johnson</td>
+                                <td><span class="status-badge status-active">Medium</span></td>
+                                <td>2025-06-05</td>
+                                <td>30%</td>
+                                <td><span class="status-badge status-pending">In Progress</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Edit Customer Survey Analysis Task">Edit</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Payment Track Page -->
+            <div id="payments" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Payment Tracking</h1>
+                    <p class="page-subtitle">Monitor incoming and outgoing payments</p>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <button class="btn btn-primary" aria-label="Record Payment">
+                            ➕ Record Payment
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">💳</div>
+                            <div class="card-title">Pending Payments</div>
+                        </div>
+                        <div class="card-value">$8,750</div>
+                        <div class="card-description">Awaiting processing</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Payment History</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Reference</th>
+                                <th>Customer/Supplier</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2025-05-30</td>
+                                <td>PAY-001</td>
+                                <td>John Doe</td>
+                                <td>$299.99</td>
+                                <td>Credit Card</td>
+                                <td><span class="status-badge status-active">Completed</span></td>
+                                <td><button class="btn btn-secondary" aria-label="View Payment PAY-001">View</button></td>
+                            </tr>
+                            <tr>
+                                <td>2025-05-29</td>
+                                <td>PAY-002</td>
+                                <td>ABC Corp</td>
+                                <td>$2,500</td>
+                                <td>Bank Transfer</td>
+                                <td><span class="status-badge status-pending">Processing</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Track Payment PAY-002">Track</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Website Management Page -->
+            <div id="website" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Website Management</h1>
+                    <p class="page-subtitle">Manage your online presence</p>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">👁️</div>
+                            <div class="card-title">Monthly Visitors</div>
+                        </div>
+                        <div class="card-value">24,891</div>
+                        <div class="card-description">+18% from last month</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🛒</div>
+                            <div class="card-title">Conversion Rate</div>
+                        </div>
+                        <div class="card-value">3.2%</div>
+                        <div class="card-description">Online sales conversion</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Content Management</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Page</th>
+                                <th>Last Updated</th>
+                                <th>Views</th>
+                                <th>Status</th>
+                                <th>SEO Score</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Home</td>
+                                <td>2025-05-28</td>
+                                <td>12,450</td>
+                                <td><span class="status-badge status-active">Published</span></td>
+                                <td>85/100</td>
+                                <td><button class="btn btn-secondary" aria-label="Edit Home Page">Edit</button></td>
+                            </tr>
+                            <tr>
+                                <td>Products</td>
+                                <td>2025-05-25</td>
+                                <td>8,320</td>
+                                <td><span class="status-badge status-active">Published</span></td>
+                                <td>78/100</td>
+                                <td><button class="btn btn-secondary" aria-label="Edit Products Page">Edit</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Ledger Page -->
+            <div id="ledger" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">General Ledger</h1>
+                    <p class="page-subtitle">Complete financial transaction records</p>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">💰</div>
+                            <div class="card-title">Total Assets</div>
+                        </div>
+                        <div class="card-value">$342,500</div>
+                        <div class="card-description">Current asset value</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📊</div>
+                            <div class="card-title">Net Profit</div>
+                        </div>
+                        <div class="card-value">$45,200</div>
+                        <div class="card-description">This quarter</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Account Balances</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Account</th>
+                                <th>Account Code</th>
+                                <th>Type</th>
+                                <th>Balance</th>
+                                <th>Last Transaction</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Cash Account</td>
+                                <td>1000</td>
+                                <td>Asset</td>
+                                <td>$25,450</td>
+                                <td>2025-05-30</td>
+                                <td><button class="btn btn-secondary" aria-label="View Cash Account">View</button></td>
+                            </tr>
+                            <tr>
+                                <td>Accounts Receivable</td>
+                                <td>1200</td>
+                                <td>Asset</td>
+                                <td>$12,750</td>
+                                <td>2025-05-29</td>
+                                <td><button class="btn btn-secondary" aria-label="View Accounts Receivable">View</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settings" class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Settings</h1>
+                    <p class="page-subtitle">Configure your application preferences</p>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <h3 style="margin-bottom: 1rem; color: #374151;">Company Information</h3>
+                        <div class="form-group">
+                            <label class="form-label">Company Name</label>
+                            <input type="text" class="form-input" value="Business Pro Inc." aria-label="Company Name" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-input" value="info@businesspro.com" aria-label="Company Email" />
+                        </div>
+                        <button class="btn btn-primary" aria-label="Save Company Information">Save Changes</button>
+                    </div>
+                    <div class="card">
+                        <h3 style="margin-bottom: 1rem; color: #374151;">Notifications</h3>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <input type="checkbox" checked style="margin-right: 8px;" aria-label="Enable Email Notifications" />
+                                Email notifications
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <input type="checkbox" checked style="margin-right: 8px;" aria-label="Enable Low Stock Alerts" />
+                                Low stock alerts
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <input type="checkbox" style="margin-right: 8px;" aria-label="Enable Payment Reminders" />
+                                Payment reminders
+                            </label>
+                        </div>
+                        <button class="btn btn-primary" aria-label="Update Notification Preferences">Update Preferences</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">User Management</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Last Login</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Admin User</td>
+                                <td>admin@businesspro.com</td>
+                                <td>Administrator</td>
+                                <td>2025-05-30</td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Edit Admin User">Edit</button></td>
+                            </tr>
+                            <tr>
+                                <td>Manager User</td>
+                                <td>manager@businesspro.com</td>
+                                <td>Manager</td>
+                                <td>2025-05-29</td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td><button class="btn btn-secondary" aria-label="Edit Manager User">Edit</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal" id="addProductModal">
+        <div class="modal-content">
+            <button class="modal-close" aria-label="Close Modal">×</button>
+            <h2>Add New Product</h2>
+            <form>
+                <div class="form-group">
+                    <label class="form-label">Product Name</label>
+                    <input type="text" class="form-input" placeholder="Enter product name" aria-label="Product Name" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">SKU</label>
+                    <input type="text" class="form-input" placeholder="Enter SKU" aria-label="SKU" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <input type="text" class="form-input" placeholder="Enter category" aria-label="Category" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stock</label>
+                    <input type="number" class="form-input" placeholder="Enter stock quantity" aria-label="Stock Quantity" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Price</label>
+                    <input type="text" class="form-input" placeholder="Enter price" aria-label="Price" required />
+                </div>
+                <button type="submit" class="btn btn-primary" aria-label="Save Product">Save Product</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Navigation functionality
+            const navLinks = document.querySelectorAll('.nav-link');
+            const pages = document.querySelectorAll('.page');
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.querySelector('.sidebar-toggle');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all links and pages
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    pages.forEach(p => p.classList.remove('active'));
+                    
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                    
+                    // Show corresponding page
+                    const pageId = this.getAttribute('data-page');
+                    const targetPage = document.getElementById(pageId);
+                    if (targetPage) {
+                        targetPage.classList.add('active');
+                        smoothTransition(targetPage);
+                    }
+
+                    // Close sidebar on mobile after clicking
+                    if (window.innerWidth <= 1024) {
+                        sidebar.classList.remove('active');
+                    }
+                });
+            });
+
+            // Sidebar toggle functionality
+            toggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+
+            // Add loading animation to buttons
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (!this.querySelector('.loading') && !this.classList.contains('modal-close')) {
+                        const originalText = this.innerHTML;
+                        this.innerHTML = '<span class="loading"></span> Processing...';
+                        this.disabled = true;
+                        
+                        setTimeout(() => {
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        }, 1500);
+                    }
+                });
+            });
+
+            // Add hover effects to cards
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-8px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+
+            // Animate numbers on dashboard
+            animateNumbers();
+
+            // Initialize search functionality
+            addSearchFunctionality();
+
+            // Initialize sales chart
+            initializeSalesChart();
+
+            // Modal functionality
+            const modal = document.getElementById('addProductModal');
+            const modalClose = document.querySelector('.modal-close');
+            modalClose.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+
+            // Initialize intersection observer
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                        observer.unobserve(entry.target); // Unobserve after animation
+                    }
+                });
+            }, observerOptions);
+
+            const elementsToAnimate = document.querySelectorAll('.card, .table-container');
+            elementsToAnimate.forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(30px)';
+                el.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                observer.observe(el);
+            });
+        });
+
+        // Function to animate numbers
+        function animateNumbers() {
+            const numberElements = document.querySelectorAll('.card-value');
+            numberElements.forEach(element => {
+                const text = element.textContent;
+                const number = parseInt(text.replace(/[^0-9]/g, '')) || 0;
+                const prefix = text.replace(/[0-9,]/g, '');
+                
+                if (number > 0) {
+                    let current = 0;
+                    const increment = number / 50;
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= number) {
+                            current = number;
+                            clearInterval(timer);
+                        }
+                        element.textContent = prefix + Math.floor(current).toLocaleString();
+                    }, 30);
+                }
+            });
+        }
+
+        // Function to show add product form
+        function showAddProductForm() {
+            const modal = document.getElementById('addProductModal');
+            modal.style.display = 'flex';
+        }
+
+        // Smooth transition for page changes
+        function smoothTransition(element) {
+            element.style.opacity = '0';
+            element.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                element.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                element.style.opacity = '1';
+                element.style.transform = 'translateY(0)';
+            }, 100);
+        }
+
+        // Add search functionality
+        function addSearchFunctionality() {
+            const tables = document.querySelectorAll('.table-container');
+            tables.forEach(tableContainer => {
+                // Check if search input already exists
+                if (!tableContainer.querySelector('.search-input')) {
+                    const table = tableContainer.querySelector('.table');
+                    const searchInput = document.createElement('input');
+                    searchInput.className = 'form-input search-input';
+                    searchInput.placeholder = 'Search...';
+                    searchInput.style.marginBottom = '1rem';
+                    searchInput.setAttribute('aria-label', 'Search table');
+                    
+                    searchInput.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase();
+                        const rows = table.querySelectorAll('tbody tr');
+                        
+                        rows.forEach(row => {
+                            const text = row.textContent.toLowerCase();
+                            row.style.display = text.includes(searchTerm) ? '' : 'none';
+                        });
+                    });
+                    
+                    tableContainer.insertBefore(searchInput, table);
+                }
+            });
+        }
+
+        // Initialize sales chart
+        function initializeSalesChart() {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Sales ($)',
+                        data: [12000, 19000, 15000, 25000, 22000, 30000],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Add real-time clock
+        function updateClock() {
+            const now = new Date();
+            let clockElement = document.querySelector('.clock');
+            
+            if (!clockElement) {
+                clockElement = document.createElement('div');
+                clockElement.className = 'clock';
+                clockElement.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: rgba(255, 255, 255, 0.9);
+                    padding: 10px 15px;
+                    border-radius: 10px;
+                    font-weight: 600;
+                    color: #374151;
+                    z-index: 1001;
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                `;
+                document.body.appendChild(clockElement);
+            }
+            
+            clockElement.textContent = now.toLocaleTimeString();
+        }
+
+        // Update clock every second
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</body>
+</html>

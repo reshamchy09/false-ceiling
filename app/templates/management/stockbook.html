@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Book | Business Pro</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
+    <!-- jsPDF and autoTable for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-bottom: 1rem;
+        }
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-link:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+        .nav-link:hover:before {
+            left: 100%;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(8px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            opacity: 0.8;
+        }
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            transition: margin-left 0.3s ease;
+        }
+        .page {
+            animation: fadeInUp 0.6s ease;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+        }
+        .page-subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+            margin: 0;
+            flex-basis: 100%;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        .btn-pdf {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: 2px solid #ff6b6b;
+        }
+        .btn-pdf:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #ee5a24, #ff6b6b);
+            box-shadow: 0 8px 25px rgba(238, 90, 36, 0.4);
+            border-color: #ee5a24;
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            background: #667eea;
+            color: white;
+        }
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-x: auto; /* Essential for horizontal scrolling on small screens */
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px; /* Allows table to shrink but provides a base */
+        }
+        .table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
+            white-space: nowrap; /* Prevent headers from wrapping unnecessarily */
+        }
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        .table tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .controls > * {
+            flex: 1;
+            min-width: 200px; /* Ensure controls don't get too small */
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1002;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .connection-status {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: #dc2626;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            z-index: 1001;
+            display: none;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Main responsive breakpoint */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .sidebar-toggle {
+                display: block;
+            }
+            .page-header {
+                 flex-direction: column;
+                 align-items: stretch;
+            }
+            /* Stack controls vertically on smaller screens */
+            .controls {
+                 flex-direction: column;
+            }
+            /* Allow controls to take full width */
+            .controls > * {
+                 min-width: 100%;
+            }
+            /* Adjust table and its container for better mobile fit */
+            .table-container {
+                 padding: 1rem;
+            }
+            .table {
+                 font-size: 0.8rem; /* Smaller font size for table */
+                 min-width: 500px; /* Adjust min-width if needed */
+            }
+            .table th, .table td {
+                 padding: 0.75rem; /* Reduce padding */
+            }
+             .page-title {
+                 font-size: 2rem;
+             }
+             .page-subtitle {
+                 font-size: 1rem;
+             }
+        }
+         @media (max-width: 480px) {
+             .table {
+                 min-width: 400px; /* Further reduce if necessary */
+                 font-size: 0.7rem;
+             }
+             .table th, .table td {
+                  padding: 0.5rem;
+             }
+         }
+    </style>
+</head>
+<body>
+    <button class="sidebar-toggle" aria-label="Toggle Sidebar">☰</button>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Business Pro</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link" aria-label="Home">
+                        <span class="nav-icon">🏠</span>
+                        Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link" aria-label="Dashboard">
+                        <span class="nav-icon">📊</span>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="inventory.html" class="nav-link" aria-label="Inventory">
+                        <span class="nav-icon">📦</span>
+                        Inventory
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="invoice.html" class="nav-link" aria-label="Invoice and Billing">
+                        <span class="nav-icon">📄</span>
+                        Invoice & Billing
+                    </a>
+                </li>
+                 <li class="nav-item">
+                    <a href="customers.html" class="nav-link" aria-label="Customers">
+                        <span class="nav-icon">👥</span>
+                        Customers
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link" aria-label="Employees">
+                        <span class="nav-icon">👤</span>
+                        Employees
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="purchase.html" class="nav-link" aria-label="Purchase">
+                        <span class="nav-icon">🛒</span>
+                        Purchase
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="expense.html" class="nav-link" aria-label="Expense">
+                        <span class="nav-icon">💸</span>
+                        Expense
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="tasks.html" class="nav-link" aria-label="Task Assignment">
+                        <span class="nav-icon">✅</span>
+                        Task Assignment
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="payments.html" class="nav-link" aria-label="Payment Track">
+                        <span class="nav-icon">💳</span>
+                        Payment Track
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="website.html" class="nav-link" aria-label="Website Management">
+                        <span class="nav-icon">🌐</span>
+                        Website Management
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="ledger.html" class="nav-link" aria-label="Ledger">
+                        <span class="nav-icon">📚</span>
+                        Ledger
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.html" class="nav-link" aria-label="Settings">
+                        <span class="nav-icon">⚙️</span>
+                        Settings
+                    </a>
+                </li>
+                 <li class="nav-item">
+                    <a href="stockbook.html" class="nav-link active" aria-label="Stock Book">
+                        <span class="nav-icon">📈</span>
+                        Stock Book
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="main-content">
+            <div class="page">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Stock Book</h1>
+                        <p class="page-subtitle">Detailed inventory transactions</p>
+                    </div>
+                    <button class="btn btn-pdf" id="downloadPdfBtn" aria-label="Download Stock Book as PDF">
+                        📄 Download PDF
+                    </button>
+                </div>
+
+                <div class="table-container">
+                   <div class="controls">
+                        <input type="text" class="search-input" id="productSearch" placeholder="Search materials...">
+                    </div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Material</th>
+                                <th>Opening Stock</th>
+                                <th>Purchased</th>
+                                <th>Issued</th>
+                                <th>Closing Stock</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockBookTableBody">
+                            <!-- Stock book rows will be inserted here -->
+                            <tr><td colspan="7" style="text-align: center;">Loading stock data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="connection-status" id="connectionStatus">Database connection lost. Retrying...</div>
+
+    <script>
+        // --- Firebase Configuration ---
+        // Please ensure this matches your project's configuration
+        const firebaseConfig = {
+             apiKey: "AIzaSyCmJl82VktcyAZQYsMc_0Rw-2MxRNPBVUw",
+            authDomain: "shop-mgt.firebaseapp.com",
+            projectId: "shop-mgt",
+            storageBucket: "shop-mgt.appspot.com",
+            messagingSenderId: "577237698646",
+            appId: "1:577237698646:web:185d0aeb482eb7b70713f7",
+            measurementId: "G-D5YTD5M9HB",
+            databaseURL: "https://shop-mgt-default-rtdb.firebaseio.com/"
+        };
+
+        // Initialize Firebase
+        let database, productsRef;
+        let allProductsData = {}; // Store all products data
+
+        try {
+            const app = firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            productsRef = database.ref('products');
+            console.log("Firebase initialized successfully for Stock Book");
+
+            database.ref('.info/connected').on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    console.log("Connected to Firebase (Stock Book)");
+                    hideConnectionError();
+                    loadProducts();
+                } else {
+                    console.log("Not connected to Firebase (Stock Book)");
+                    showConnectionError();
+                }
+            });
+        } catch (err) {
+            console.error("Firebase initialization error (Stock Book):", err);
+            showConnectionError();
+            alert("Failed to initialize Firebase for Stock Book. Please check your configuration.");
+        }
+
+        // --- DOM Ready ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.querySelector('.sidebar-toggle');
+
+            // Sidebar toggle
+            toggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+
+            // Event Listeners
+            document.getElementById('productSearch').addEventListener('input', filterStockBook);
+            document.getElementById('downloadPdfBtn').addEventListener('click', downloadStockBookPDF);
+        });
+
+        // --- Data Loading ---
+        function loadProducts() {
+            if (!productsRef) {
+                console.error('Products reference not initialized');
+                showConnectionError();
+                return;
+            }
+            console.log('Setting up products listener for Stock Book');
+            productsRef.on('value', (snapshot) => {
+                console.log('Loading products from database for Stock Book');
+                allProductsData = snapshot.val() || {};
+                populateStockBookTable(allProductsData);
+                hideConnectionError();
+            }, (err) => {
+                console.error('Error loading products for Stock Book:', err);
+                alert(`Failed to load products: ${err.message}`);
+                showConnectionError();
+            });
+        }
+
+        // --- UI Population ---
+        function populateStockBookTable(products) {
+             const tableBody = document.getElementById('stockBookTableBody');
+             tableBody.innerHTML = ''; // Clear existing rows
+
+             if (!products || Object.keys(products).length === 0) {
+                 tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No products found in inventory.</td></tr>';
+                 return;
+            }
+
+             const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+
+             Object.entries(products).forEach(([id, product]) => {
+                 const stock = product.stock || 0;
+                 // For this example, we'll assume Opening Stock = Closing Stock = Current Stock
+                 // Purchased and Issued are placeholders as the data model doesn't provide history
+                 const openingStock = `${stock} pcs`;
+                 const purchased = 'N/A'; // Placeholder
+                 const issued = 'N/A';    // Placeholder
+                 const closingStock = `${stock} pcs`;
+                 // Remarks could be notes or a status message
+                 const remarks = product.notes || (stock <= 20 ? 'Low Stock' : 'In Stock');
+
+                 const row = document.createElement('tr');
+                 row.innerHTML = `
+                     <td>${today}</td> <!-- Using today's date as example -->
+                     <td>${product.name || 'N/A'}</td>
+                     <td>${openingStock}</td>
+                     <td>${purchased}</td>
+                     <td>${issued}</td>
+                     <td>${closingStock}</td>
+                     <td>${remarks}</td>
+                 `;
+                 tableBody.appendChild(row);
+             });
+        }
+
+        // --- Filtering ---
+        function filterStockBook() {
+            const searchTerm = document.getElementById('productSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#stockBookTableBody tr');
+            let hasVisibleRow = false;
+
+            rows.forEach(row => {
+                // Skip the "Loading..." or "No data..." row
+                if (row.querySelector('td[colspan]')) return;
+
+                const materialCell = row.cells[1]; // Material column
+                if (materialCell) {
+                    const materialText = materialCell.textContent || materialCell.innerText;
+                    if (searchTerm === '' || materialText.toLowerCase().includes(searchTerm)) {
+                        row.style.display = '';
+                        hasVisibleRow = true;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+
+            // If no rows match the filter, show a message
+            const tableBody = document.getElementById('stockBookTableBody');
+            const noDataRow = tableBody.querySelector('tr[data-no-data]');
+            if (!hasVisibleRow && searchTerm !== '') {
+                if (!noDataRow) {
+                    const newRow = document.createElement('tr');
+                    newRow.setAttribute('data-no-data', 'true');
+                    newRow.innerHTML = `<td colspan="7" style="text-align: center;">No materials match your search.</td>`;
+                    tableBody.appendChild(newRow);
+                } else {
+                    noDataRow.style.display = ''; // Show existing no-data row
+                }
+            } else if (noDataRow) {
+                noDataRow.style.display = 'none'; // Hide no-data row if results exist
+            }
+        }
+
+
+        // --- PDF Generation ---
+        function downloadStockBookPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Add title
+            doc.setFontSize(18);
+            doc.text('Stock Book Report', 105, 20, null, null, 'center');
+
+            // Add date
+            const reportDate = new Date().toLocaleDateString('en-IN');
+            doc.setFontSize(12);
+            doc.text(`Generated on: ${reportDate}`, 105, 30, null, null, 'center');
+
+            // Prepare data from the currently displayed table
+            const table = document.querySelector('.table');
+            if (!table) {
+                 alert("Table not found for PDF generation.");
+                 return;
+            }
+            const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent);
+            // Select only visible rows that are not placeholder rows
+            const rows = table.querySelectorAll('tbody tr:not([style*="display: none"]):not([data-no-data])');
+
+            const tableData = [];
+            rows.forEach(row => {
+                const rowData = Array.from(row.querySelectorAll('td')).map(cell => cell.textContent);
+                tableData.push(rowData);
+            });
+
+            // Generate the table
+            doc.autoTable({
+                head: [headers],
+                body: tableData,
+                startY: 40,
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 2,
+                    overflow: 'linebreak'
+                },
+                columnStyles: {
+                    0: { cellWidth: 20 }, // Date
+                    1: { cellWidth: 30 }, // Material
+                    2: { cellWidth: 20 }, // Opening Stock
+                    3: { cellWidth: 15 }, // Purchased
+                    4: { cellWidth: 15 }, // Issued
+                    5: { cellWidth: 20 }, // Closing Stock
+                    6: { cellWidth: 30 }  // Remarks
+                },
+                headStyles: {
+                    fillColor: [102, 126, 234], // Match header color
+                    textColor: 255
+                }
+            });
+
+            // Download the PDF
+            doc.save('stock_book_report.pdf');
+        }
+
+        // --- Utility Functions ---
+        function showConnectionError() {
+            document.getElementById('connectionStatus').style.display = 'block';
+        }
+
+        function hideConnectionError() {
+            document.getElementById('connectionStatus').style.display = 'none';
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,296 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tools - Dhangadhi False Ceiling{% endblock %}
+{% block meta_description %}Explore Tile, Gypsum, Partition, and PVC Tools for your false ceiling projects in Dhangadhi, Nepal. Get precise material estimates for professional installations.{% endblock %}
+{% block meta_keywords %}false ceiling tools, tile calculator, gypsum calculator, partition tools, PVC tools, Dhangadhi, Nepal{% endblock %}
+
+{% block content %}
+<section class="hero-section d-flex align-items-center text-white">
+    <div class="container text-center" data-aos="fade-up">
+        <h1 class="hero-title fw-bold mb-3">False Ceiling Tools</h1>
+        <p class="hero-subtitle mb-4">Select the perfect tool for your ceiling project, from tiles to PVC, and get accurate material estimates.</p>
+        <a href="#tools-section" class="btn btn-primary-custom btn-lg pulse-glow">Explore Tools</a>
+    </div>
+</section>
+
+<section id="tools-section" class="section-padding bg-light">
+    <div class="container">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <h2 class="fw-bold gradient-text">Select Your Tool Type</h2>
+            <p class="text-muted">Choose from our specialized calculators to plan your false ceiling project with precision.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12 col-sm-6 col-lg-3" data-aos="fade-up" data-aos-delay="100">
+                <div class="tool-card">
+                    <img src="{% static 'images/f-2.jpg' %}" alt="Tile Tools Icon" class="tool-icon">
+                    <h3 class="fw-bold text-dark mb-2">Tile Tools</h3>
+                    <p class="text-muted small mb-3">Calculate materials for ceiling tile installations with precision.</p>
+                    <form action="{% url 'tools_tile' %}">
+                        <button type="submit" class="btn btn-primary-custom w-100">Go to Tile Tools</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-lg-3" data-aos="fade-up" data-aos-delay="200">
+                <div class="tool-card">
+                    <img src="{% static 'images/gypsum.jpeg' %}" alt="Gypsum Tools Icon" class="tool-icon">
+                    <h3 class="fw-bold text-dark mb-2">Gypsum Tools</h3>
+                    <p class="text-muted small mb-3">Estimate gypsum boards and accessories for false ceilings.</p>
+                    <form action="{% url 'tools_gypsum' %}">
+                        <button type="submit" class="btn btn-primary-custom w-100">Go to Gypsum Tools</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-lg-3" data-aos="fade-up" data-aos-delay="300">
+                <div class="tool-card">
+                    <img src="{% static 'images/gypsum-board-partition.jpg' %}" alt="Partition Tools Icon" class="tool-icon">
+                    <h3 class="fw-bold text-dark mb-2">Partition Tools</h3>
+                    <p class="text-muted small mb-3">Plan materials for partition walls and false ceiling designs.</p>
+                    <form action="{% url 'tools_partition' %}">
+                        <button type="submit" class="btn btn-primary-custom w-100">Go to Partition Tools</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-lg-3" data-aos="fade-up" data-aos-delay="400">
+                <div class="tool-card">
+                    <img src="{% static 'images/pvc.jpg' %}" alt="PVC Tools Icon" class="tool-icon">
+                    <h3 class="fw-bold text-dark mb-2">PVC Tools</h3>
+                    <p class="text-muted small mb-3">Estimate PVC panels and accessories for modern ceilings.</p>
+                    <form action="{% url 'tools_pvc' %}">
+                        <button type="submit" class="btn btn-primary-custom w-100">Go to PVC Tools</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="gradient-bg text-white text-center section-padding">
+    <div class="container" data-aos="fade-up">
+        <h2 class="contact-title fw-bold mb-4">Need Help with Your Project?</h2>
+        <p class="lead mb-4">Contact our experts for professional installation and personalized guidance.</p>
+        <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+            <a href="{% url 'contact' %}" class="btn btn-primary-custom btn-lg pulse-glow">
+                <i class="fas fa-phone me-2"></i>Contact Us
+            </a>
+            <a href="{% url 'myservices' %}" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-eye me-2"></i>View Services
+            </a>
+        </div>
+    </div>
+</section>
+
+<button id="backToTop" class="btn btn-primary-custom rounded-circle back-to-top">
+    <i class="fas fa-arrow-up"></i>
+</button>
+
+<style>
+.hero-section {
+    background: 
+        linear-gradient(135deg, rgba(0, 51, 102, 0.9), rgba(0, 102, 204, 0.7)),
+        url("{% static 'images/bg-pattern.jpg' %}");
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+}
+
+
+.gradient-bg {
+    background: linear-gradient(135deg, #003366, #0066cc);
+}
+
+.section-padding {
+    padding: 60px 0;
+}
+
+.gradient-text {
+    background: linear-gradient(45deg, #007bff, #00d4ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.btn-primary-custom {
+    background-color: #007bff;
+    border: none;
+    transition: all 0.3s ease;
+    padding: 12px 24px;
+    font-weight: 600;
+}
+
+.btn-primary-custom:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+.pulse-glow {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+}
+
+.tool-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    padding: 25px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    text-align: center;
+}
+
+.tool-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 123, 255, 0.25);
+}
+
+.tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 123, 255, 0.1), transparent);
+    transition: 0.5s;
+}
+
+.tool-card:hover::before {
+    left: 100%;
+}
+
+.tool-icon {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin: 0 auto 15px;
+    display: block;
+}
+
+.back-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: none;
+    z-index: 1000;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Mobile Styles */
+@media (max-width: 576px) {
+    .hero-section {
+        min-height: 50vh;
+        padding: 20px 0;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+    
+    .section-padding {
+        padding: 40px 0;
+    }
+    
+    .tool-card {
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .contact-title {
+        font-size: 1.8rem;
+    }
+    
+    .btn-lg {
+        padding: 10px 20px;
+        font-size: 1rem;
+    }
+}
+
+/* Tablet Styles */
+@media (min-width: 577px) and (max-width: 768px) {
+    .hero-section {
+        min-height: 55vh;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+    }
+    
+    .tool-card {
+        padding: 22px;
+    }
+}
+
+/* Desktop Styles */
+@media (min-width: 992px) {
+    .hero-section {
+        min-height: 60vh;
+    }
+    
+    .hero-title {
+        font-size: 3rem;
+    }
+}
+
+/* Large Desktop */
+@media (min-width: 1200px) {
+    .container {
+        max-width: 1200px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize AOS if available
+    if (typeof AOS !== 'undefined') {
+        AOS.init({
+            duration: 800,
+            once: true,
+            offset: 100
+        });
+    }
+
+    // Back to Top Button
+    const backToTop = document.getElementById('backToTop');
+    if (backToTop) {
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 300) {
+                backToTop.style.display = 'flex';
+            } else {
+                backToTop.style.display = 'none';
+            }
+        });
+
+        backToTop.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+});
+</script>
+{% endblock %}

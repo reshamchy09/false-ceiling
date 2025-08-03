@@ -1,0 +1,1706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker Attendance & Accounts</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-size: clamp(14px, 2.5vw, 16px);
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: row;
+        }
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: clamp(1rem, 3vw, 2rem);
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-bottom: 1rem;
+        }
+        .sidebar-header h2 {
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .nav-menu {
+            list-style: none;
+            padding: 0 clamp(0.5rem, 2vw, 1rem);
+        }
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: clamp(0.8rem, 2vw, 1rem) clamp(1rem, 3vw, 1.5rem);
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            touch-action: manipulation;
+        }
+        .nav-link:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+        .nav-link:hover:before {
+            left: 100%;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(8px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+        .nav-icon {
+            width: clamp(16px, 2.5vw, 20px);
+            height: clamp(16px, 2.5vw, 20px);
+            margin-right: clamp(8px, 2vw, 12px);
+            opacity: 0.3;
+        }
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: clamp(1rem, 3vw, 2rem);
+            transition: margin-left 0.3s ease;
+        }
+        .page {
+            animation: pageFadeIn 1s ease-in-out;
+        }
+        @keyframes pageFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .page-header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: clamp(1rem, 3vw, 2rem);
+            border-radius: 20px;
+            margin-bottom: clamp(1rem, 3vw, 2rem);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: clamp(0.5rem, 2vw, 1rem);
+        }
+        .page-title {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            color: transparent;
+            margin: 0;
+        }
+        .page-subtitle {
+            color: #6b7280;
+            font-size: clamp(0.8rem, 2.5vw, 1rem);
+            margin: 0;
+        }
+        .controls {
+             display: flex;
+             flex-wrap: wrap;
+             gap: clamp(0.8rem, 2vw, 1rem);
+             align-items: center;
+             margin-bottom: clamp(1rem, 2vw, 1.5rem);
+             background: rgba(255,255,255,0.9);
+             padding: clamp(0.8rem, 2vw, 1rem);
+             border-radius: 12px;
+             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: clamp(150px, 30vw, 250px);
+        }
+        .control-group label {
+            font-weight: 600;
+            margin-bottom: clamp(0.3rem, 1vw, 0.5rem);
+            color: #4b5563;
+            font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+        }
+        .form-control {
+            width: 100%;
+            padding: clamp(0.6rem, 2vw, 0.8rem) clamp(0.8rem, 2.5vw, 1rem);
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: clamp(0.85rem, 2.2vw, 1rem);
+            transition: border-color 0.3s ease;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+        .btn {
+            padding: clamp(8px, 2vw, 12px) clamp(16px, 3vw, 24px);
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(6px, 1.5vw, 8px);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            touch-action: manipulation;
+            flex-shrink: 0; /* Prevent buttons from shrinking too much */
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 10px 15px rgba(102,126,234,0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(102,126,234,0.4);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.9);
+            color: #667eea;
+            border: 1px solid #667eea;
+        }
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            border: none;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-warning {
+             background: #f59e0b;
+             color: white;
+             border: none;
+        }
+        .btn-warning:hover {
+             background: #d97706;
+        }
+        .table-container {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: clamp(1rem, 3vw, 2rem);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            overflow-x: auto;
+            margin-bottom: clamp(1rem, 2vw, 2rem);
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+        }
+        .table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: clamp(0.8rem, 2vw, 1rem);
+            text-align: left;
+            font-weight: bold;
+        }
+        .table td {
+            padding: clamp(0.8rem, 2vw, 1rem);
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .table tbody tr:hover {
+            background-color: rgba(102,126,234,0.1);
+        }
+        .status-badge {
+            padding: clamp(4px, 1.5vw, 6px) clamp(8px, 2vw, 12px);
+            border-radius: 20px;
+            font-size: clamp(0.75rem, 2vw, 0.875rem);
+            font-weight: bold;
+            text-transform: uppercase;
+            display: inline-block;
+            text-align: center;
+            min-width: clamp(60px, 10vw, 80px);
+        }
+        .status-present {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-absent {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .status-leave {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: clamp(10px, 2vw, 20px);
+            left: clamp(10px, 2vw, 20px);
+            z-index: 1001;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: clamp(8px, 2vw, 10px) clamp(12px, 2.5vw, 15px);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: clamp(1rem, 3vw, 1.2rem);
+            touch-action: manipulation;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            padding: clamp(1rem, 3vw, 2rem);
+        }
+        .modal-content {
+            background: white;
+            padding: clamp(1rem, 3vw, 2rem);
+            border-radius: 12px;
+            width: 90%;
+            max-width: clamp(300px, 80vw, 500px);
+            position: relative;
+            animation: modalFadeIn 0.3s ease-out;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .modal-content h2 {
+            margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
+            color: #1f2937;
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+        }
+        .btn-container {
+            display: flex;
+            gap: clamp(0.5rem, 2vw, 1rem);
+            justify-content: flex-end;
+            margin-top: clamp(0.8rem, 2vw, 1rem);
+        }
+        .close-modal {
+            position: absolute;
+            top: clamp(0.5rem, 2vw, 1rem);
+            right: clamp(0.5rem, 2vw, 1rem);
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            cursor: pointer;
+            color: #6b7280;
+            background: none;
+            border: none;
+            width: clamp(28px, 5vw, 36px);
+            height: clamp(28px, 5vw, 36px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+        .close-modal:hover {
+            background-color: #f3f4f6;
+        }
+        .toast {
+            position: fixed;
+            bottom: clamp(10px, 2vw, 20px);
+            right: clamp(10px, 2vw, 20px);
+            background: #1f2937;
+            color: white;
+            padding: clamp(0.8rem, 2vw, 1rem) clamp(1rem, 2.5vw, 1.5rem);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1001;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+        }
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .toast-success {
+            background: #065f46;
+        }
+        .toast-error {
+            background: #991b1b;
+        }
+        .toast-info {
+            background: #1e40af;
+        }
+        .loading {
+            display: inline-block;
+            width: clamp(16px, 2.5vw, 20px);
+            height: clamp(16px, 2.5vw, 20px);
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .nepali-date-display {
+            font-weight: bold;
+            color: #4b5563;
+            background-color: #f3f4f6;
+            padding: clamp(0.4rem, 1.5vw, 0.6rem) clamp(0.8rem, 2vw, 1rem);
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+        }
+        .section-title {
+             font-size: clamp(1.2rem, 3vw, 1.5rem);
+             margin-top: clamp(1rem, 2vw, 2rem);
+             margin-bottom: clamp(0.5rem, 1.5vw, 1rem);
+             color: #374151;
+             padding-bottom: clamp(0.3rem, 1vw, 0.5rem);
+             border-bottom: 2px solid #e5e7eb;
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+        }
+        .summary-cards {
+             display: grid;
+             grid-template-columns: repeat(auto-fit, minmax(clamp(200px, 25vw, 250px), 1fr));
+             gap: clamp(1rem, 2vw, 1.5rem);
+             margin-bottom: clamp(1rem, 2vw, 2rem);
+        }
+        .summary-card {
+             background: rgba(255,255,255,0.9);
+             border-radius: 15px;
+             padding: clamp(1rem, 2vw, 1.5rem);
+             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+             text-align: center;
+        }
+        .summary-card-title {
+             font-size: clamp(0.9rem, 2vw, 1rem);
+             color: #6b7280;
+             margin-bottom: clamp(0.3rem, 1vw, 0.5rem);
+        }
+        .summary-card-value {
+             font-size: clamp(1.5rem, 3vw, 2rem);
+             font-weight: bold;
+             color: #667eea;
+        }
+        .summary-card-value.negative {
+             color: #ef4444;
+        }
+        .npr-symbol {
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+        }
+        .text-sm {
+            font-size: clamp(0.75rem, 2vw, 0.875rem);
+        }
+        .text-gray-500 {
+            color: #6b7280;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .statement-header {
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+             margin-bottom: clamp(1rem, 2vw, 1.5rem);
+             flex-wrap: wrap;
+             gap: clamp(0.5rem, 2vw, 1rem);
+        }
+        .statement-title {
+             font-size: clamp(1.3rem, 3vw, 1.8rem);
+             font-weight: bold;
+             color: #1f2937;
+        }
+        .statement-subtitle {
+             color: #6b7280;
+             font-size: clamp(0.9rem, 2vw, 1rem);
+        }
+        .statement-info {
+             margin-bottom: clamp(1rem, 2vw, 1.5rem);
+             padding: clamp(0.8rem, 2vw, 1rem);
+             background: #f9fafb;
+             border-radius: 10px;
+             border: 1px solid #e5e7eb;
+        }
+        .statement-info-item {
+             margin-bottom: clamp(0.3rem, 1vw, 0.5rem);
+             font-size: clamp(0.9rem, 2vw, 1rem);
+        }
+        .statement-info-item strong {
+             color: #374151;
+        }
+        .no-data {
+            text-align: center;
+            padding: clamp(2rem, 4vw, 3rem);
+            color: #9ca3af;
+            font-style: italic;
+        }
+        .account-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: clamp(0.6rem, 1.5vw, 0.8rem) 0;
+            border-bottom: 1px solid #eee;
+        }
+        .account-entry:last-child {
+            border-bottom: none;
+        }
+        .account-date {
+            font-weight: 500;
+            color: #4b5563;
+            min-width: 80px; /* Adjust as needed */
+        }
+        .account-reason {
+            flex: 1;
+            margin: 0 clamp(0.8rem, 2vw, 1rem);
+            color: #6b7280;
+        }
+        .account-type {
+             font-weight: 600;
+             padding: clamp(2px, 0.5vw, 4px) clamp(6px, 1.5vw, 8px);
+             border-radius: 4px;
+             font-size: clamp(0.7rem, 1.8vw, 0.75rem);
+        }
+        .account-type.credit {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .account-type.debit {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .account-amount {
+            font-weight: 600;
+            min-width: 80px; /* Adjust as needed */
+            text-align: right;
+        }
+        .account-amount.credit {
+            color: #059669; /* Green for credit */
+        }
+        .account-amount.debit {
+            color: #dc2626; /* Red for debit */
+        }
+        .statement-footer {
+             margin-top: clamp(1rem, 2vw, 2rem);
+             padding-top: clamp(0.8rem, 2vw, 1rem);
+             border-top: 2px solid #e5e7eb;
+             display: flex;
+             justify-content: space-between;
+             font-weight: bold;
+             font-size: clamp(1rem, 2.5vw, 1.1rem);
+        }
+        .statement-total-label {
+             color: #374151;
+        }
+        .statement-total-amount {
+             color: #667eea;
+        }
+        .statement-total-amount.negative {
+             color: #ef4444;
+        }
+        /* Large Tablets and Below (max-width: 1024px) */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                padding: clamp(0.8rem, 2.5vw, 1rem);
+            }
+            .sidebar {
+                transform: translateX(-100%);
+                width: clamp(200px, 60vw, 260px);
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .sidebar-toggle {
+                display: block;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+             .page-header {
+                 flex-direction: column;
+                 align-items: flex-start;
+             }
+        }
+        /* Mobile Devices (max-width: 768px) */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+             .summary-cards {
+                 grid-template-columns: 1fr;
+             }
+            .btn-container {
+                flex-direction: column;
+                gap: clamp(0.5rem, 2vw, 0.8rem);
+            }
+            .btn {
+                width: 100%;
+                padding: clamp(10px, 3vw, 14px) clamp(16px, 4vw, 20px);
+            }
+            .table th, .table td {
+                padding: clamp(0.5rem, 1.5vw, 0.8rem);
+            }
+            .table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            .table thead {
+                display: none; /* Hide table headers on mobile */
+            }
+            .table tbody tr {
+                display: block;
+                margin-bottom: clamp(0.8rem, 2vw, 1rem);
+                border-bottom: 2px solid #e5e7eb;
+            }
+            .table tbody td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: clamp(0.5rem, 1.5vw, 0.8rem);
+                border-bottom: none;
+                position: relative;
+            }
+            .table tbody td:before {
+                content: attr(data-label);
+                font-weight: bold;
+                color: #4b5563;
+                flex: 0 0 40%;
+                font-size: clamp(0.75rem, 2vw, 0.85rem);
+            }
+            .table tbody td:not(:last-child) {
+                border-bottom: 1px solid #e5e7eb;
+            }
+            .modal-content {
+                padding: clamp(0.8rem, 2.5vw, 1.5rem);
+                max-height: 85vh;
+            }
+            .modal {
+                padding: clamp(0.5rem, 2vw, 1rem);
+            }
+             .account-entry {
+                 flex-direction: column;
+                 align-items: flex-start;
+                 gap: clamp(0.3rem, 1vw, 0.5rem);
+             }
+             .account-date, .account-amount {
+                 text-align: left;
+                 min-width: unset;
+             }
+        }
+        /* Small Mobile Devices (max-width: 480px) */
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100%;
+            }
+            .page-title {
+                font-size: clamp(1.2rem, 4vw, 1.8rem);
+            }
+            .card {
+                padding: clamp(0.8rem, 2.5vw, 1rem);
+            }
+            .btn-sm {
+                width: 100%;
+            }
+        }
+         /* Style for Select Dropdown */
+        .form-control.select {
+            appearance: none; /* Remove default styling */
+            background-image: url("image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M7 10l3 3 3-3'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem; /* Adjust padding to accommodate the arrow */
+        }
+        .transaction-filter {
+             margin-bottom: clamp(0.8rem, 2vw, 1rem);
+             display: flex;
+             flex-wrap: wrap;
+             gap: clamp(0.5rem, 1.5vw, 0.8rem);
+             align-items: center;
+        }
+        .transaction-filter label {
+             font-weight: 600;
+             color: #4b5563;
+             font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+        }
+        /* Modal for Deduct Balance */
+        #deductBalanceModal .form-group {
+            margin-bottom: 1rem;
+        }
+        #deductBalanceModal .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        #deductBalanceModal .form-control {
+            width: 100%;
+        }
+        .deduct-info {
+             background-color: #fffbeb;
+             border: 1px solid #fbbf24;
+             border-radius: 6px;
+             padding: 0.8rem;
+             margin-bottom: 1rem;
+             font-size: 0.9rem;
+        }
+        .deduct-info strong {
+             color: #92400e;
+        }
+    </style>
+</head>
+<body>
+    <button class="sidebar-toggle" aria-label="Toggle Sidebar">☰</button>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Business Pro</h2>
+            </div>
+            <ul class="nav-menu">
+        <li class="nav-item">
+            <a href="{% url 'index' %}" class="nav-link" aria-label="Home">
+                <span class="nav-icon">🏠</span>
+                Home
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'admin_dashboard' %}" class="nav-link" aria-label="Dashboard">
+                <span class="nav-icon">📊</span>
+                Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'inventory' %}" class="nav-link" aria-label="Inventory">
+                <span class="nav-icon">📦</span>
+                Inventory
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'sales' %}" class="nav-link" aria-label="Sales">
+                <span class="nav-icon">💰</span>
+                Sales
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'customers' %}" class="nav-link" aria-label="Customers">
+                <span class="nav-icon">👥</span>
+                Customers
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'employees' %}" class="nav-link" aria-label="Employees">
+                <span class="nav-icon">👤</span>
+                Employees
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'invoice' %}" class="nav-link" aria-label="Invoice and Billing">
+                <span class="nav-icon">📄</span>
+                Invoice & Billing
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'purchase' %}" class="nav-link" aria-label="Purchase">
+                <span class="nav-icon">🛒</span>
+                Purchase
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'expense' %}" class="nav-link" aria-label="Expense">
+                <span class="nav-icon">💸</span>
+                Expense
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'tasks' %}" class="nav-link" aria-label="Task Assignment">
+                <span class="nav-icon">✅</span>
+                Task Assignment
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'payments' %}" class="nav-link" aria-label="Payment Track">
+                <span class="nav-icon">💳</span>
+                Payment Track
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'website' %}" class="nav-link" aria-label="Website Management">
+                <span class="nav-icon">🌐</span>
+                Website Management
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'ledger' %}" class="nav-link" aria-label="Ledger">
+                <span class="nav-icon">📚</span>
+                Ledger
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'subscription' %}" class="nav-link" aria-label="Subscription">
+                <span class="nav-icon">🧾</span>
+                Subscription
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'stockbook' %}" class="nav-link" aria-label="Stock Book">
+                <span class="nav-icon">📘</span>
+                Stock Book
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'attendance' %}" class="nav-link" aria-label="Attendance">
+                <span class="nav-icon">🕒</span>
+                Attendance
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'settings' %}" class="nav-link" aria-label="Settings">
+                <span class="nav-icon">⚙️</span>
+                Settings
+            </a>
+        </li>
+    </ul>
+        </div>
+        <div class="main-content">
+            <div class="page">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Worker Attendance & Accounts</h1>
+                        <p class="page-subtitle">Track daily attendance and manage worker accounts</p>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="attendanceDate">Select Date (Gregorian)</label>
+                        <input type="date" class="form-control" id="attendanceDate">
+                    </div>
+                    <div class="control-group">
+                        <label>Nepali Date</label>
+                        <div class="nepali-date-display" id="nepaliDateDisplay">-</div>
+                    </div>
+                    <div class="control-group">
+                        <label for="workerFilter">Filter by Worker</label>
+                        <select class="form-control select" id="workerFilter">
+                            <option value="">All Workers</option>
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="loadAttendanceBtn">Load Attendance</button>
+                    <button class="btn btn-secondary" id="generateStatementBtn">Generate Statement</button>
+                </div>
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="summary-card-title">Present Today</div>
+                        <div class="summary-card-value" id="presentCount">0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-card-title">Absent Today</div>
+                        <div class="summary-card-value" id="absentCount">0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-card-title">On Leave Today</div>
+                        <div class="summary-card-value" id="leaveCount">0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-card-title">Total Wages (NPR)</div>
+                        <div class="summary-card-value" id="totalWagesToday">रु 0</div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <h2 class="section-title">Daily Attendance</h2>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Worker Name</th>
+                                <th>Role</th>
+                                <th>Daily Wage (NPR)</th>
+                                <th>Status</th>
+                                <th>Work Place</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                            <!-- Attendance data will be loaded here -->
+                            <tr><td colspan="6" class="text-center">Select a date and click "Load Attendance"</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-container" id="accountStatementContainer" style="display: none;">
+                    <div class="statement-header">
+                        <div>
+                            <h2 class="statement-title" id="statementWorkerName">Worker Statement</h2>
+                            <p class="statement-subtitle" id="statementDateRange">-</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-warning" id="deductBalanceBtn">Deduct Balance</button>
+                            <button class="btn btn-primary" id="downloadPdfBtn">Download PDF</button>
+                            <button class="btn btn-secondary" id="closeStatementBtn">Close Statement</button>
+                        </div>
+                    </div>
+                    <div class="statement-info">
+                        <div class="statement-info-item"><strong>Username:</strong> <span id="statementUsername">-</span></div>
+                        <div class="statement-info-item"><strong>Role:</strong> <span id="statementRole">-</span></div>
+                        <div class="statement-info-item"><strong>Daily Wage:</strong> <span class="npr-symbol">रु</span> <span id="statementDailyWage">-</span></div>
+                        <div class="statement-info-item"><strong>Current Balance:</strong> <span class="npr-symbol">रु</span> <span id="statementCurrentBalance">0</span></div>
+                    </div>
+                     <div class="transaction-filter">
+                         <label for="transactionFilter">Filter Transactions:</label>
+                         <select class="form-control select" id="transactionFilter">
+                             <option value="all">All Transactions</option>
+                             <option value="credit">Credits Only</option>
+                             <option value="debit">Debits Only</option>
+                         </select>
+                     </div>
+                    <h3 class="section-title">Account History</h3>
+                    <div id="accountHistoryList">
+                        <!-- Account history will be populated here -->
+                        <div class="no-data">No account history found.</div>
+                    </div>
+                    <div class="statement-footer">
+                        <span class="statement-total-label">Final Balance:</span>
+                        <span class="statement-total-amount" id="statementTotalBalance">रु 0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Modal for Marking Present (Work Place Input) -->
+        <div class="modal" id="workPlaceModal">
+            <div class="modal-content">
+                <span class="close-modal" id="closeWorkPlaceModal">×</span>
+                <h2>Mark Present</h2>
+                <p>Please enter the work location for <strong id="modalWorkerName"></strong>.</p>
+                <div class="form-group">
+                    <label for="workPlaceInput">Work Place *</label>
+                    <input type="text" class="form-control" id="workPlaceInput" placeholder="e.g., Warehouse, Site A" required>
+                    <input type="hidden" id="modalWorkerId">
+                    <input type="hidden" id="modalAttendanceDate">
+                </div>
+                <div class="btn-container">
+                    <button type="button" class="btn btn-secondary" id="cancelWorkPlaceBtn">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmPresentBtn">Confirm Present</button>
+                </div>
+            </div>
+        </div>
+        <!-- Modal for Deducting Balance -->
+        <div class="modal" id="deductBalanceModal">
+            <div class="modal-content">
+                <span class="close-modal" id="closeDeductModal">×</span>
+                <h2>Deduct Worker Balance</h2>
+                <div class="deduct-info">
+                    <p><strong>Worker:</strong> <span id="deductWorkerName">-</span></p>
+                    <p><strong>Current Balance:</strong> <span class="npr-symbol">रु</span> <span id="deductCurrentBalance">0</span></p>
+                </div>
+                <form id="deductBalanceForm">
+                    <input type="hidden" id="deductWorkerId">
+                    <div class="form-group">
+                        <label for="deductAmount">Amount to Deduct (NPR) *</label>
+                        <div class="salary-input">
+                            <span class="npr-symbol">रु</span>
+                            <input type="number" class="form-control" id="deductAmount" placeholder="1000" min="0.01" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="deductReason">Reason for Deduction *</label>
+                        <input type="text" class="form-control" id="deductReason" placeholder="e.g., Advance, Penalty, Tool Damage" required>
+                    </div>
+                    <div class="btn-container">
+                        <button type="button" class="btn btn-secondary" id="cancelDeductBtn">Cancel</button>
+                        <button type="submit" class="btn btn-danger" id="confirmDeductBtn">Confirm Deduction</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Firebase configuration (from previous code)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCmJl82VktcyAZQYsMc_0Rw-2MxRNPBVUw",
+            authDomain: "shop-mgt.firebaseapp.com",
+            databaseURL: "https://shop-mgt-default-rtdb.firebaseio.com",
+            projectId: "shop-mgt",
+            storageBucket: "shop-mgt.appspot.com",
+            messagingSenderId: "577237698646",
+            appId: "1:577237698646:web:185d0aeb482eb7b70713f7",
+            measurementId: "G-D5YTD5M9HB"
+        };
+        // Initialize Firebase
+        let database;
+        try {
+            const app = firebase.initializeApp(firebaseConfig);
+            database = firebase.database(app);
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            showToast('Failed to connect to database. Please check your configuration.', 'error');
+        }
+
+        // --- Simple Gregorian to Nepali Date Conversion (Basic Approximation) ---
+        // Note: This is a simplified version for demonstration. For accurate conversion,
+        // consider using a dedicated library like 'nepali-date-converter'.
+        function convertToNepaliDate(gregorianDateString) {
+            // This is a placeholder function. A real implementation would use a conversion library.
+            // For simplicity, we'll just format the Gregorian date differently.
+            // In a real app, replace this with a proper conversion.
+            const months = ["Baishakh", "Jestha", "Ashadh", "Shrawan", "Bhadra", "Ashwin", "Kartik", "Mangsir", "Poush", "Magh", "Falgun", "Chaitra"];
+            const gDate = new Date(gregorianDateString);
+            // Very rough approximation - NOT ACCURATE
+            let nepaliYear = gDate.getFullYear() - 56;
+            let nepaliMonthIndex = gDate.getMonth(); // Simplified mapping
+            let nepaliDay = gDate.getDate();
+            if (gDate.getMonth() < 4) { // Jan-April
+                nepaliYear -= 1;
+                nepaliMonthIndex += 8; // Map to Ashwin-Kartik
+            } else { // May-Dec
+                nepaliMonthIndex -= 4; // Map to Baishakh-Ashadh
+            }
+            // Clamp month index
+            nepaliMonthIndex = Math.max(0, Math.min(11, nepaliMonthIndex));
+            return `${nepaliDay} ${months[nepaliMonthIndex]}, ${nepaliYear}`;
+        }
+        // --- End Nepali Date Conversion ---
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.querySelector('.sidebar-toggle');
+            const attendanceDateInput = document.getElementById('attendanceDate');
+            const nepaliDateDisplay = document.getElementById('nepaliDateDisplay');
+            const workerFilter = document.getElementById('workerFilter');
+            const loadAttendanceBtn = document.getElementById('loadAttendanceBtn');
+            const generateStatementBtn = document.getElementById('generateStatementBtn');
+            const attendanceTableBody = document.getElementById('attendanceTableBody');
+            const presentCount = document.getElementById('presentCount');
+            const absentCount = document.getElementById('absentCount');
+            const leaveCount = document.getElementById('leaveCount');
+            const totalWagesToday = document.getElementById('totalWagesToday');
+            // Modal Elements - Work Place
+            const workPlaceModal = document.getElementById('workPlaceModal');
+            const closeWorkPlaceModal = document.getElementById('closeWorkPlaceModal');
+            const cancelWorkPlaceBtn = document.getElementById('cancelWorkPlaceBtn');
+            const confirmPresentBtn = document.getElementById('confirmPresentBtn');
+            const modalWorkerName = document.getElementById('modalWorkerName');
+            const workPlaceInput = document.getElementById('workPlaceInput');
+            const modalWorkerId = document.getElementById('modalWorkerId');
+            const modalAttendanceDate = document.getElementById('modalAttendanceDate');
+            // Statement Elements
+            const accountStatementContainer = document.getElementById('accountStatementContainer');
+            const statementWorkerName = document.getElementById('statementWorkerName');
+            const statementDateRange = document.getElementById('statementDateRange');
+            const statementUsername = document.getElementById('statementUsername');
+            const statementRole = document.getElementById('statementRole');
+            const statementDailyWage = document.getElementById('statementDailyWage');
+            const statementCurrentBalance = document.getElementById('statementCurrentBalance'); // NEW
+            const accountHistoryList = document.getElementById('accountHistoryList');
+            const statementTotalBalance = document.getElementById('statementTotalBalance');
+            const closeStatementBtn = document.getElementById('closeStatementBtn');
+            const deductBalanceBtn = document.getElementById('deductBalanceBtn');
+            const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+            const transactionFilter = document.getElementById('transactionFilter'); // NEW
+            // Modal Elements - Deduct Balance
+            const deductBalanceModal = document.getElementById('deductBalanceModal');
+            const closeDeductModal = document.getElementById('closeDeductModal');
+            const cancelDeductBtn = document.getElementById('cancelDeductBtn');
+            const deductBalanceForm = document.getElementById('deductBalanceForm');
+            const deductWorkerName = document.getElementById('deductWorkerName');
+            const deductCurrentBalance = document.getElementById('deductCurrentBalance');
+            const deductWorkerId = document.getElementById('deductWorkerId');
+            const deductAmount = document.getElementById('deductAmount');
+            const deductReason = document.getElementById('deductReason');
+
+            // State
+            let allWorkers = [];
+            let currentAttendanceData = {};
+            let selectedWorkerForStatement = null; // Stores worker object for statement generation
+            let currentStatementTransactions = []; // Stores loaded transactions for filtering
+
+            // Sidebar toggle
+            toggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            attendanceDateInput.value = today;
+            updateNepaliDateDisplay(today);
+
+            // Update Nepali date display when Gregorian date changes
+            attendanceDateInput.addEventListener('change', function() {
+                updateNepaliDateDisplay(this.value);
+            });
+
+            function updateNepaliDateDisplay(gregorianDate) {
+                // In a real implementation, call a proper conversion function
+                const nepaliDateStr = convertToNepaliDate(gregorianDate);
+                nepaliDateDisplay.textContent = nepaliDateStr;
+            }
+
+
+            // --- Load Workers from users/userid ---
+            // Load Workers (only Users with role 'Worker') for dropdown and processing
+            function loadWorkers() {
+                if (!database) return;
+
+                // Updated path to load workers from users
+                database.ref('users').once('value')
+                    .then(snapshot => {
+                        allWorkers = [];
+                        workerFilter.innerHTML = '<option value="">All Workers</option>'; // Reset options
+
+                        snapshot.forEach(childSnapshot => {
+                            const userData = childSnapshot.val();
+                            // Check if the user has the role 'Worker'
+                            if (userData && userData.role === 'Worker') {
+                                // Construct the worker object using the new structure
+                                const worker = {
+                                    id: childSnapshot.key, // userid
+                                    name: userData.name || 'Unnamed Worker',
+                                    role: userData.role || 'Worker',
+                                    dailyWage: parseFloat(userData.dailyWage) || 0, // Ensure it's a number
+                                    username: userData.username || userData.email || 'N/A'
+                                };
+                                allWorkers.push(worker);
+
+                                const option = document.createElement('option');
+                                option.value = worker.id;
+                                option.textContent = worker.name;
+                                workerFilter.appendChild(option);
+                            }
+                        });
+
+                        if (allWorkers.length === 0) {
+                            console.warn("No workers found under 'users' with role 'Worker'.");
+                            showToast('No workers found. Please ensure users exist with the role "Worker".', 'info');
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error loading workers from 'users':", error);
+                        showToast('Failed to load worker list.', 'error');
+                    });
+            }
+            // --- End Load Workers ---
+
+            // Load Attendance for selected date and filter
+            loadAttendanceBtn.addEventListener('click', loadAttendanceForDate);
+            function loadAttendanceForDate() {
+                const selectedDate = attendanceDateInput.value;
+                const selectedWorkerId = workerFilter.value;
+
+                if (!selectedDate) {
+                    showToast('Please select a date.', 'error');
+                    return;
+                }
+                if (!database) {
+                    showToast('Database not initialized.', 'error');
+                    return;
+                }
+
+                // Reference to the attendance data for the selected date
+                const attendanceRef = database.ref('attendance').child(selectedDate);
+                attendanceRef.once('value')
+                    .then(snapshot => {
+                        currentAttendanceData = snapshot.val() || {};
+                        displayAttendanceTable(selectedWorkerId);
+                        calculateAndDisplaySummary(selectedDate);
+                    })
+                    .catch(error => {
+                        console.error("Error loading attendance:", error);
+                        showToast('Failed to load attendance data.', 'error');
+                    });
+            }
+
+            function displayAttendanceTable(filterWorkerId = '') {
+                attendanceTableBody.innerHTML = '';
+
+                if (allWorkers.length === 0) {
+                    attendanceTableBody.innerHTML = '<tr><td colspan="6" class="text-center">No workers found. Please ensure workers exist in the User Management section with role "Worker".</td></tr>';
+                    return;
+                }
+
+                let hasDataToShow = false;
+                allWorkers.forEach(worker => {
+                    // Apply filter if a specific worker is selected
+                    if (filterWorkerId && worker.id !== filterWorkerId) {
+                        return;
+                    }
+                    hasDataToShow = true;
+
+                    const workerId = worker.id;
+                    const attendanceRecord = currentAttendanceData[workerId] || {};
+                    const status = attendanceRecord.status || 'Absent'; // Default to Absent if no record
+                    const workPlace = attendanceRecord.workPlace || '-';
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td data-label="Worker Name"><strong>${worker.name}</strong></td>
+                        <td data-label="Role">${worker.role}</td>
+                        <td data-label="Daily Wage"><span class="npr-symbol">रु</span> ${formatNumber(worker.dailyWage || 0)}</td>
+                        <td data-label="Status">
+                            <span class="status-badge status-${status.toLowerCase()}">${status}</span>
+                        </td>
+                        <td data-label="Work Place">${workPlace}</td>
+                        <td data-label="Actions">
+                            ${status === 'Absent' ? `
+                                <button class="btn btn-primary btn-sm mark-present-btn" data-worker-id="${workerId}" data-worker-name="${worker.name}" aria-label="Mark ${worker.name} Present">
+                                    Present
+                                </button>
+                                <button class="btn btn-warning btn-sm mark-leave-btn" data-worker-id="${workerId}" data-worker-name="${worker.name}" aria-label="Mark ${worker.name} On Leave">
+                                    Leave
+                                </button>
+                            ` : `
+                                <button class="btn btn-danger btn-sm mark-absent-btn" data-worker-id="${workerId}" data-worker-name="${worker.name}" aria-label="Mark ${worker.name} Absent">
+                                    Absent
+                                </button>
+                                ${status === 'Present' ? `<span class="text-sm text-gray-500">(Wage Credited)</span>` : ''}
+                            `}
+                        </td>
+                    `;
+                    attendanceTableBody.appendChild(row);
+                });
+
+                if (!hasDataToShow) {
+                    attendanceTableBody.innerHTML = '<tr><td colspan="6" class="text-center">No attendance records found for the selected worker on this date.</td></tr>';
+                }
+
+                // Add event listeners to action buttons
+                document.querySelectorAll('.mark-present-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const workerId = this.getAttribute('data-worker-id');
+                        const workerName = this.getAttribute('data-worker-name');
+                        openWorkPlaceModal(workerId, workerName, attendanceDateInput.value);
+                    });
+                });
+                document.querySelectorAll('.mark-leave-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const workerId = this.getAttribute('data-worker-id');
+                        const workerName = this.getAttribute('data-worker-name');
+                        markAttendance(workerId, 'Leave', workerName);
+                    });
+                });
+                document.querySelectorAll('.mark-absent-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const workerId = this.getAttribute('data-worker-id');
+                        const workerName = this.getAttribute('data-worker-name');
+                        markAttendance(workerId, 'Absent', workerName);
+                    });
+                });
+            }
+
+            function calculateAndDisplaySummary(selectedDate) {
+                 let pCount = 0, aCount = 0, lCount = 0, totalWages = 0;
+                 allWorkers.forEach(worker => {
+                      const workerId = worker.id;
+                      const attendanceRecord = currentAttendanceData[workerId] || {};
+                      const status = attendanceRecord.status || 'Absent';
+                      switch(status) {
+                          case 'Present':
+                              pCount++;
+                              totalWages += worker.dailyWage || 0;
+                              break;
+                          case 'Absent':
+                              aCount++;
+                              break;
+                          case 'Leave':
+                              lCount++;
+                              break;
+                      }
+                 });
+                 presentCount.textContent = pCount;
+                 absentCount.textContent = aCount;
+                 leaveCount.textContent = lCount;
+                 totalWagesToday.textContent = `रु ${formatNumber(totalWages)}`;
+            }
+
+            // Modal for Work Place
+            function openWorkPlaceModal(workerId, workerName, date) {
+                modalWorkerId.value = workerId;
+                modalAttendanceDate.value = date;
+                modalWorkerName.textContent = workerName;
+                workPlaceInput.value = '';
+                workPlaceModal.style.display = 'flex';
+                workPlaceInput.focus();
+            }
+
+            function closeWorkPlaceModalFunc() {
+                workPlaceModal.style.display = 'none';
+            }
+
+            closeWorkPlaceModal.addEventListener('click', closeWorkPlaceModalFunc);
+            cancelWorkPlaceBtn.addEventListener('click', closeWorkPlaceModalFunc);
+            workPlaceModal.addEventListener('click', function(e) {
+                if (e.target === workPlaceModal) closeWorkPlaceModalFunc();
+            });
+
+            // Confirm Present and save
+            confirmPresentBtn.addEventListener('click', function() {
+                const workerId = modalWorkerId.value;
+                const date = modalAttendanceDate.value;
+                const workPlace = workPlaceInput.value.trim();
+
+                if (!workPlace) {
+                    showToast('Please enter the work place.', 'error');
+                    return;
+                }
+
+                const worker = allWorkers.find(w => w.id === workerId);
+                if (!worker) {
+                    showToast('Worker not found.', 'error');
+                    closeWorkPlaceModalFunc();
+                    return;
+                }
+
+                markAttendance(workerId, 'Present', worker.name, workPlace, worker.dailyWage);
+                closeWorkPlaceModalFunc();
+            });
+
+            // Generic function to mark attendance and handle wage crediting
+            function markAttendance(workerId, status, workerName, workPlace = null, dailyWage = 0) {
+                const date = attendanceDateInput.value;
+                if (!date) {
+                    showToast('No date selected.', 'error');
+                    return;
+                }
+                if (!database) {
+                    showToast('Database not initialized.', 'error');
+                    return;
+                }
+
+                const attendanceRef = database.ref('attendance').child(date).child(workerId);
+                // Note: employeeRef is no longer needed as we are not updating the user object directly here
+                const accountRef = database.ref('worker_accounts').child(workerId);
+
+                const updates = {};
+                // 1. Update Attendance Record
+                const attendanceData = {
+                    status: status,
+                    timestamp: new Date().toISOString(),
+                    ...(status === 'Present' && workPlace && { workPlace: workPlace })
+                };
+                updates[`attendance/${date}/${workerId}`] = attendanceData;
+
+
+                // 2. If Present, Credit Wage and Update Account
+                if (status === 'Present' && dailyWage > 0) {
+                    // a. Get current account balance
+                    accountRef.child('balance').once('value').then(snapshot => {
+                        let currentBalance = parseFloat(snapshot.val()) || 0;
+                        let newBalance = currentBalance + dailyWage;
+
+                        // b. Update account balance
+                        updates[`worker_accounts/${workerId}/balance`] = newBalance;
+
+                        // c. Add transaction record
+                        const newTransactionRef = accountRef.child('transactions').push();
+                        const transactionKey = newTransactionRef.key;
+                        const transactionData = {
+                            type: 'credit',
+                            amount: dailyWage,
+                            reason: `Attendance - ${date} (${workPlace})`,
+                            date: date,
+                            timestamp: new Date().toISOString()
+                        };
+                        updates[`worker_accounts/${workerId}/transactions/${transactionKey}`] = transactionData;
+
+                        // d. Perform all updates atomically
+                         return database.ref().update(updates);
+                    }).then(() => {
+                         showToast(`Attendance marked as ${status} for ${workerName}. Wage credited.`, 'success');
+                         // Reload the table to reflect changes
+                         loadAttendanceForDate();
+                    }).catch(error => {
+                        console.error("Error updating attendance/wage:", error);
+                        showToast('Failed to mark attendance or credit wage.', 'error');
+                    });
+                } else {
+                    // For Absent/Leave or if wage is 0, just update attendance
+                    database.ref().update(updates)
+                        .then(() => {
+                            showToast(`Attendance marked as ${status} for ${workerName}.`, 'success');
+                            // Reload the table to reflect changes
+                            loadAttendanceForDate();
+                        })
+                        .catch(error => {
+                            console.error("Error updating attendance:", error);
+                            showToast('Failed to mark attendance.', 'error');
+                        });
+                }
+            }
+
+
+             // Generate Worker Statement
+            generateStatementBtn.addEventListener('click', function() {
+                const selectedWorkerId = workerFilter.value;
+                if (!selectedWorkerId) {
+                    showToast('Please select a worker to generate a statement.', 'error');
+                    return;
+                }
+                const selectedWorker = allWorkers.find(w => w.id === selectedWorkerId);
+                if (!selectedWorker) {
+                    showToast('Selected worker not found.', 'error');
+                    return;
+                }
+                selectedWorkerForStatement = selectedWorker; // Store for use in display
+                loadAndDisplayStatement(selectedWorkerId);
+            });
+
+            function loadAndDisplayStatement(workerId) {
+                if (!database) {
+                    showToast('Database not initialized.', 'error');
+                    return;
+                }
+
+                 const worker = selectedWorkerForStatement;
+                 if (!worker) return; // Should not happen if button check passed
+
+                // Update statement header info
+                statementWorkerName.textContent = worker.name;
+                statementUsername.textContent = worker.username || 'N/A';
+                statementRole.textContent = worker.role || 'N/A';
+                statementDailyWage.textContent = formatNumber(worker.dailyWage || 0);
+                statementDateRange.textContent = `As of ${new Date().toLocaleDateString()}`; // Or a specific range if implemented
+
+                // Show statement container, hide main table
+                document.querySelector('.table-container:not(#accountStatementContainer)').style.display = 'none';
+                accountStatementContainer.style.display = 'block';
+
+                // Load account balance and history
+                const accountRef = database.ref('worker_accounts').child(workerId);
+                Promise.all([
+                    accountRef.child('balance').once('value'),
+                    accountRef.child('transactions').orderByChild('timestamp').once('value')
+                ]).then(([balanceSnapshot, transactionsSnapshot]) => {
+                     const balance = parseFloat(balanceSnapshot.val()) || 0;
+                     statementCurrentBalance.textContent = formatNumber(balance); // Display current balance
+                     currentStatementTransactions = [];
+                     transactionsSnapshot.forEach(childSnapshot => {
+                         currentStatementTransactions.push({ id: childSnapshot.key, ...childSnapshot.val() });
+                     });
+                     // Initially display all transactions
+                     displayTransactions(currentStatementTransactions);
+                     updateStatementTotal(balance); // Use the live balance for total
+                }).catch(error => {
+                     console.error("Error loading account statement data:", error);
+                     accountHistoryList.innerHTML = '<div class="no-data">Error loading account data.</div>';
+                     statementCurrentBalance.textContent = '0';
+                     statementTotalBalance.textContent = 'रु 0';
+                });
+            }
+
+            // Function to display transactions based on filter
+            function displayTransactions(transactionsToDisplay) {
+                 accountHistoryList.innerHTML = '';
+                 if (transactionsToDisplay.length === 0) {
+                     accountHistoryList.innerHTML = '<div class="no-data">No transactions match the filter.</div>';
+                     return;
+                 }
+                 transactionsToDisplay.forEach(transaction => {
+                     const entryDiv = document.createElement('div');
+                     entryDiv.className = 'account-entry';
+                     entryDiv.innerHTML = `
+                         <div class="account-date">${formatDate(transaction.date)}</div>
+                         <div class="account-type ${transaction.type}">${transaction.type.toUpperCase()}</div>
+                         <div class="account-reason">${transaction.reason || 'N/A'}</div>
+                         <div class="account-amount ${transaction.type}">
+                             <span class="npr-symbol">रु</span> ${formatNumber(transaction.amount)}
+                         </div>
+                     `;
+                     accountHistoryList.appendChild(entryDiv);
+                 });
+            }
+
+            // Function to update the final balance in the footer
+            function updateStatementTotal(finalBalance) {
+                 statementTotalBalance.textContent = `रु ${formatNumber(finalBalance)}`;
+                 statementTotalBalance.className = `statement-total-amount ${finalBalance < 0 ? 'negative' : ''}`;
+            }
+
+            // Transaction Filter
+            transactionFilter.addEventListener('change', function() {
+                 const filterValue = this.value;
+                 let filteredTransactions = [];
+                 if (filterValue === 'all') {
+                     filteredTransactions = currentStatementTransactions;
+                 } else {
+                     filteredTransactions = currentStatementTransactions.filter(t => t.type === filterValue);
+                 }
+                 displayTransactions(filteredTransactions);
+            });
+
+            // Close Statement and show main table
+            closeStatementBtn.addEventListener('click', function() {
+                 accountStatementContainer.style.display = 'none';
+                 document.querySelector('.table-container:not(#accountStatementContainer)').style.display = 'block';
+                 selectedWorkerForStatement = null;
+                 currentStatementTransactions = [];
+            });
+
+            // --- Deduct Balance Functionality ---
+            deductBalanceBtn.addEventListener('click', function() {
+                 if (!selectedWorkerForStatement) return;
+                 openDeductBalanceModal(selectedWorkerForStatement);
+            });
+
+            function openDeductBalanceModal(worker) {
+                deductWorkerId.value = worker.id;
+                deductWorkerName.textContent = worker.name;
+                // Fetch current balance again to ensure it's up-to-date
+                database.ref('worker_accounts').child(worker.id).child('balance').once('value')
+                    .then(snapshot => {
+                         const balance = parseFloat(snapshot.val()) || 0;
+                         deductCurrentBalance.textContent = formatNumber(balance);
+                         deductAmount.value = '';
+                         deductReason.value = '';
+                         deductBalanceModal.style.display = 'flex';
+                         deductAmount.focus();
+                    })
+                    .catch(error => {
+                         console.error("Error fetching balance for deduction:", error);
+                         showToast('Error fetching worker balance.', 'error');
+                    });
+            }
+
+            function closeDeductBalanceModalFunc() {
+                deductBalanceModal.style.display = 'none';
+            }
+
+            closeDeductModal.addEventListener('click', closeDeductBalanceModalFunc);
+            cancelDeductBtn.addEventListener('click', closeDeductBalanceModalFunc);
+            deductBalanceModal.addEventListener('click', function(e) {
+                if (e.target === deductBalanceModal) closeDeductBalanceModalFunc();
+            });
+
+            deductBalanceForm.addEventListener('submit', function(e) {
+                 e.preventDefault();
+                 const workerId = deductWorkerId.value;
+                 const amount = parseFloat(deductAmount.value);
+                 const reason = deductReason.value.trim();
+
+                 if (isNaN(amount) || amount <= 0) {
+                     showToast('Please enter a valid deduction amount.', 'error');
+                     return;
+                 }
+                 if (!reason) {
+                     showToast('Please enter a reason for the deduction.', 'error');
+                     return;
+                 }
+
+                 performDeduction(workerId, amount, reason);
+            });
+
+            function performDeduction(workerId, amount, reason) {
+                 if (!database) {
+                     showToast('Database not initialized.', 'error');
+                     closeDeductBalanceModalFunc();
+                     return;
+                 }
+
+                 const accountRef = database.ref('worker_accounts').child(workerId);
+                 accountRef.child('balance').once('value').then(snapshot => {
+                     let currentBalance = parseFloat(snapshot.val()) || 0;
+                     let newBalance = currentBalance - amount;
+
+                     if (newBalance < 0) {
+                         // Optional: Allow negative balance or prevent?
+                         // For now, let's allow it but warn.
+                         // if (newBalance < -1000) { // Example limit
+                         //    throw new Error('Deduction would exceed allowed negative balance limit.');
+                         // }
+                     }
+
+                     const updates = {};
+                     updates[`worker_accounts/${workerId}/balance`] = newBalance;
+
+                     const newTransactionRef = accountRef.child('transactions').push();
+                     const transactionKey = newTransactionRef.key;
+                     const transactionData = {
+                         type: 'debit',
+                         amount: amount,
+                         reason: reason,
+                         date: new Date().toISOString().split('T')[0], // Today's date
+                         timestamp: new Date().toISOString()
+                     };
+                     updates[`worker_accounts/${workerId}/transactions/${transactionKey}`] = transactionData;
+
+                     return database.ref().update(updates);
+                 }).then(() => {
+                     showToast(`रु ${formatNumber(amount)} deducted successfully.`, 'success');
+                     closeDeductBalanceModalFunc();
+                     // Refresh the statement view
+                     if (selectedWorkerForStatement && selectedWorkerForStatement.id === workerId) {
+                         loadAndDisplayStatement(workerId);
+                     }
+                 }).catch(error => {
+                     console.error("Error deducting balance:", error);
+                     showToast(error.message || 'Failed to deduct balance.', 'error');
+                 });
+            }
+            // --- End Deduct Balance Functionality ---
+
+
+            // --- PDF Generation ---
+            // Access jsPDF from the global window object after loading the UMD module
+            let jsPDF;
+            if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
+                 jsPDF = window.jspdf.jsPDF;
+            } else {
+                 console.error('jsPDF library not loaded correctly.');
+                 showToast('PDF generation library not loaded. Download might not work.', 'error');
+            }
+
+            downloadPdfBtn.addEventListener('click', generatePDF);
+
+            function generatePDF() {
+                 if (!selectedWorkerForStatement || !jsPDF) {
+                     showToast('Cannot generate PDF: No statement loaded or library missing.', 'error');
+                     return;
+                 }
+
+                 const workerName = selectedWorkerForStatement.name;
+                 const filename = `${workerName}_Statement_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+                 // Use html2canvas to capture the statement container
+                 html2canvas(accountStatementContainer, {
+                     scale: 2, // Increase quality
+                     useCORS: true, // Important for external resources if any
+                     logging: false // Reduce console output
+                 }).then(canvas => {
+                     const imgData = canvas.toDataURL('image/png');
+                     const pdf = new jsPDF('p', 'mm', 'a4');
+                     const imgWidth = 210; // A4 width in mm
+                     const pageHeight = 297; // A4 height in mm
+                     const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                     let heightLeft = imgHeight;
+                     let position = 0;
+
+                     pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                     heightLeft -= pageHeight;
+
+                     // Add new pages if content overflows
+                     while (heightLeft >= 0) {
+                         position = heightLeft - imgHeight;
+                         pdf.addPage();
+                         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                         heightLeft -= pageHeight;
+                     }
+                     pdf.save(filename);
+                     showToast('PDF generated and download started.', 'success');
+                 }).catch(err => {
+                     console.error('Error generating PDF:', err);
+                     showToast('Failed to generate PDF. Please try again.', 'error');
+                 });
+            }
+            // --- End PDF Generation ---
+
+
+            // Helper function to format numbers (NPR)
+            function formatNumber(num) {
+                // Handle potential floating point issues and ensure 2 decimal places for currency
+                return new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+            }
+
+            // Helper function to format dates (simple YYYY-MM-DD to readable)
+            function formatDate(dateString) {
+                 if (!dateString) return 'N/A';
+                 const options = { year: 'numeric', month: 'short', day: 'numeric' };
+                 // Parse the date string assuming it's in YYYY-MM-DD format
+                 const parts = dateString.split('-');
+                 if (parts.length === 3) {
+                     const dateObj = new Date(parts[0], parts[1] - 1, parts[2]); // Month is 0-indexed
+                     // Check if dateObj is valid
+                     if (isNaN(dateObj.getTime())) {
+                         return dateString; // Return original if parsing fails
+                     }
+                     return dateObj.toLocaleDateString('en-US', options);
+                 }
+                 return dateString; // Fallback if parsing fails
+            }
+
+            // Show toast notification
+            function showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `toast toast-${type}`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                setTimeout(() => {
+                    toast.classList.add('show');
+                }, 10);
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                }, 3000);
+            }
+
+            // Initialize
+            loadWorkers();
+        });
+    </script>
+</body>
+</html>

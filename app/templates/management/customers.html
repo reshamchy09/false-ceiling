@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customers | Business Pro</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
+    <!-- jsPDF and autoTable for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-bottom: 1rem;
+        }
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-link:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+        .nav-link:hover:before {
+            left: 100%;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(8px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            opacity: 0.8;
+        }
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            transition: margin-left 0.3s ease;
+        }
+        .page {
+            animation: fadeInUp 0.6s ease;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+            gap: 1rem; /* Add space between elements */
+        }
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0; /* Remove default margin */
+        }
+        .page-subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+            margin: 0; /* Remove default margin */
+            flex-basis: 100%; /* Force subtitle to new line */
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        .btn-pdf {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24); /* Distinct color for PDF */
+            color: white;
+            border: 2px solid #ff6b6b;
+        }
+        .btn-pdf:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #ee5a24, #ff6b6b);
+            box-shadow: 0 8px 25px rgba(238, 90, 36, 0.4);
+            border-color: #ee5a24;
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            background: #667eea;
+            color: white;
+        }
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+            border: 2px solid #dc2626;
+        }
+        .btn-danger:hover {
+             transform: translateY(-2px);
+            background: #b91c1c;
+            border-color: #b91c1c;
+        }
+        .btn-success {
+            background: #10b981; /* Green */
+            color: white;
+            border: 2px solid #10b981;
+        }
+        .btn-success:hover {
+            transform: translateY(-2px);
+            background: #059669; /* Darker green */
+            border-color: #059669;
+        }
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-x: auto;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px; /* Prevents table from shrinking too much on small screens */
+        }
+        .table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
+            white-space: nowrap; /* Prevent header text from wrapping */
+        }
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        .table tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -1rem;
+        }
+        .form-col {
+            flex: 1;
+            padding: 0 1rem;
+            min-width: 250px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #374151;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+        .connection-status {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: #dc2626;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            z-index: 1001;
+            display: none;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .controls > * {
+            flex: 1;
+            min-width: 200px; /* Ensure minimum width for controls */
+        }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 1.5rem; /* Reduced padding */
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        .card:hover:before {
+            transform: scaleX(1);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .card-icon {
+            width: 40px; /* Slightly smaller icon */
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            color: white;
+            font-size: 1.2rem; /* Smaller font size for icon */
+        }
+        .card-title {
+            font-size: 1.1rem; /* Smaller title */
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .card-value {
+            font-size: 1.8rem; /* Smaller value */
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        .card-description {
+            color: #6b7280;
+            font-size: 0.9rem; /* Smaller description */
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-paid {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .status-partial {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .status-pending {
+            background-color: #fee2e2;
+            color: #991c1c; /* Darker red for better contrast */
+        }
+        .status-completed {
+             background-color: #dcfce7;
+             color: #166534;
+        }
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1002;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .sidebar-toggle {
+                display: block;
+            }
+            .page-header {
+                 flex-direction: column;
+                 align-items: stretch;
+            }
+            .controls {
+                 flex-direction: column;
+            }
+            .cards-grid {
+                 grid-template-columns: 1fr; /* Stack cards on mobile */
+            }
+            .table {
+                 font-size: 0.85rem; /* Slightly smaller font for table on mobile */
+            }
+            .table th, .table td {
+                 padding: 0.75rem; /* Reduce padding on mobile */
+            }
+        }
+        @media (max-width: 768px) {
+             .table {
+                 min-width: 600px; /* Adjust minimum width for smaller screens */
+             }
+        }
+    </style>
+</head>
+<body>
+    <button class="sidebar-toggle" aria-label="Toggle Sidebar">☰</button>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Business Pro</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link" aria-label="Home">
+                        <span class="nav-icon">🏠</span>
+                        Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link" aria-label="Dashboard">
+                        <span class="nav-icon">📊</span>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="inventory.html" class="nav-link" aria-label="Inventory">
+                        <span class="nav-icon">📦</span>
+                        Inventory
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="invoice.html" class="nav-link" aria-label="Invoice and Billing">
+                        <span class="nav-icon">📄</span>
+                        Invoice & Billing
+                    </a>
+                </li>
+                 <li class="nav-item">
+                    <a href="customers.html" class="nav-link active" aria-label="Customers">
+                        <span class="nav-icon">👥</span>
+                        Customers
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link" aria-label="Employees">
+                        <span class="nav-icon">👤</span>
+                        Employees
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="purchase.html" class="nav-link" aria-label="Purchase">
+                        <span class="nav-icon">🛒</span>
+                        Purchase
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="expense.html" class="nav-link" aria-label="Expense">
+                        <span class="nav-icon">💸</span>
+                        Expense
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="tasks.html" class="nav-link" aria-label="Task Assignment">
+                        <span class="nav-icon">✅</span>
+                        Task Assignment
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="payments.html" class="nav-link" aria-label="Payment Track">
+                        <span class="nav-icon">💳</span>
+                        Payment Track
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="website.html" class="nav-link" aria-label="Website Management">
+                        <span class="nav-icon">🌐</span>
+                        Website Management
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="ledger.html" class="nav-link" aria-label="Ledger">
+                        <span class="nav-icon">📚</span>
+                        Ledger
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.html" class="nav-link" aria-label="Settings">
+                        <span class="nav-icon">⚙️</span>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="main-content">
+            <div class="page">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Customers</h1>
+                        <p class="page-subtitle">View customer information derived from invoices</p>
+                    </div>
+                     <button class="btn btn-pdf" id="downloadPdfBtn" aria-label="Download Customer List as PDF">
+                        📄 Download PDF
+                    </button>
+                </div>
+                <!-- Summary Cards -->
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">👥</div>
+                            <div class="card-title">Total Customers</div>
+                        </div>
+                        <div class="card-value" id="totalCustomersCount">0</div>
+                        <div class="card-description">Unique customers</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">💰</div>
+                            <div class="card-title">Total Balance</div>
+                        </div>
+                        <div class="card-value" id="totalBalance">₹0.00</div>
+                        <div class="card-description">Sum of all grand totals</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">💸</div>
+                            <div class="card-title">Total Due Balance</div>
+                        </div>
+                        <div class="card-value" id="totalDueBalance">₹0.00</div>
+                        <div class="card-description">Outstanding amounts</div>
+                    </div>
+                </div>
+                <div class="table-container">
+                   <div class="controls">
+                        <input type="text" class="search-input" id="customerSearch" placeholder="Search customers by name or phone...">
+                        <select class="form-select" id="paymentStatusFilter">
+                            <option value="all">All Payment Statuses</option>
+                            <option value="paid">Paid</option>
+                            <option value="partial">Partial</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Address</th>
+                                <th>Grand Total (₹)</th>
+                                <th>Amount Paid (₹)</th>
+                                <th>Balance Due (₹)</th>
+                                <th>Payment Status</th>
+                                <th>Last Invoice Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerTableBody">
+                            <!-- Customer rows will be populated dynamically -->
+                            <tr><td colspan="9" style="text-align: center;">Loading customer data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Update Payment Modal -->
+    <div class="modal" id="updatePaymentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Update Payment</h2>
+                <button class="close-btn" onclick="closeModal('updatePaymentModal')">&times;</button>
+            </div>
+            <form id="updatePaymentForm">
+                <input type="hidden" id="updateCustomerId">
+                <div class="form-group">
+                    <label class="form-label" for="updateCustomerName">Customer Name</label>
+                    <input type="text" class="form-input" id="updateCustomerName" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="updateCustomerPhone">Customer Phone</label>
+                    <input type="text" class="form-input" id="updateCustomerPhone" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="updateGrandTotal">Grand Total (₹)</label>
+                    <input type="text" class="form-input" id="updateGrandTotal" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="updateAmountPaid">Amount Paid (₹)</label>
+                    <input type="number" step="0.01" class="form-input" id="updateAmountPaid" required min="0">
+                </div>
+                 <div class="form-group">
+                    <label class="form-label" for="updateBalanceDue">Balance Due (₹)</label>
+                    <input type="text" class="form-input" id="updateBalanceDue" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="updatePaymentStatus">Payment Status</label>
+                    <select class="form-select" id="updatePaymentStatus" required>
+                        <option value="Pending">Pending</option>
+                        <option value="Partial">Partial</option>
+                        <option value="Paid">Paid</option>
+                    </select>
+                </div>
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('updatePaymentModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="updatePaymentSubmitBtn">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="connection-status" id="connectionStatus">Database connection lost. Retrying...</div>
+    <script>
+        // --- Firebase Configuration ---
+        // Please ensure this matches your project's configuration
+        const firebaseConfig = {
+             apiKey: "AIzaSyCmJl82VktcyAZQYsMc_0Rw-2MxRNPBVUw",
+            authDomain: "shop-mgt.firebaseapp.com",
+            projectId: "shop-mgt",
+            storageBucket: "shop-mgt.appspot.com",
+            messagingSenderId: "577237698646",
+            appId: "1:577237698646:web:185d0aeb482eb7b70713f7",
+            measurementId: "G-D5YTD5M9HB",
+            databaseURL: "https://shop-mgt-default-rtdb.firebaseio.com/"
+        };
+        // Initialize Firebase
+        let database, invoicesRef;
+        let aggregatedCustomerData = {}; // Stores processed customer data
+        try {
+            const app = firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            invoicesRef = database.ref('invoices'); // Assuming invoices are stored here
+            console.log("Firebase initialized successfully for Customers");
+            database.ref('.info/connected').on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    console.log("Connected to Firebase (Customers)");
+                    hideConnectionError();
+                    loadInvoiceData(); // Load invoices to derive customer data
+                } else {
+                    console.log("Not connected to Firebase (Customers)");
+                    showConnectionError();
+                }
+            });
+        } catch (err) {
+            console.error("Firebase initialization error (Customers):", err);
+            showConnectionError();
+            alert("Failed to initialize Firebase for Customers. Please check your configuration.");
+        }
+        // --- DOM Ready ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.querySelector('.sidebar-toggle');
+            // Sidebar toggle
+            toggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+             // Search functionality
+            document.getElementById('customerSearch').addEventListener('input', function() {
+                populateCustomerTable(aggregatedCustomerData);
+            });
+             // Filter functionality
+            document.getElementById('paymentStatusFilter').addEventListener('change', function() {
+                 populateCustomerTable(aggregatedCustomerData);
+            });
+             // PDF Download functionality
+            document.getElementById('downloadPdfBtn').addEventListener('click', downloadCustomerListPDF);
+            // Update Payment Form Submission
+            document.getElementById('updatePaymentForm').addEventListener('submit', function(e) {
+                 e.preventDefault();
+                 updateCustomerPayment(); // This function is now modified
+            });
+        });
+        // --- Data Loading and Aggregation ---
+        function loadInvoiceData() {
+            if (!invoicesRef) {
+                console.error("Invoices reference not initialized.");
+                return;
+            }
+            // Listen for changes in the invoices node
+            invoicesRef.on('value', (snapshot) => {
+                const invoices = snapshot.val();
+                console.log("Invoices loaded for customer aggregation:", Object.keys(invoices || {}).length);
+                aggregateCustomerData(invoices);
+                hideConnectionError();
+            }, (err) => {
+                console.error('Error loading invoices for customer ', err);
+                showConnectionError();
+            });
+        }
+
+        // --- Helper function to format currency ---
+        function formatCurrency(amount) {
+            return `₹${amount.toFixed(2)}`;
+        }
+
+
+        function aggregateCustomerData(invoices) {
+            aggregatedCustomerData = {}; // Reset aggregated data
+            if (!invoices) {
+                console.log("No invoices found to aggregate.");
+                populateCustomerTable(aggregatedCustomerData);
+                updateSummaryStats(aggregatedCustomerData);
+                return;
+            }
+            // Iterate through each invoice to build customer profiles
+            Object.entries(invoices).forEach(([invoiceId, invoice]) => {
+                // Basic validation: Check for required fields
+                if (!invoice.customerName || !invoice.customerPhone) {
+                    console.warn(`Skipping invoice ${invoiceId} due to missing name or phone.`);
+                    return; // Skip invoices without essential customer info
+                }
+                const key = `${invoice.customerName}|${invoice.customerPhone}`; // Unique key
+                if (!aggregatedCustomerData[key]) {
+                    // Initialize customer data if not seen before
+                    aggregatedCustomerData[key] = {
+                        name: invoice.customerName,
+                        phone: invoice.customerPhone,
+                        address: invoice.customerAddress || 'N/A',
+                        totalGrandTotal: 0, // Sum of all grand totals for this customer
+                        totalAmountPaid: 0, // Sum of all amounts paid for this customer
+                        lastInvoiceDate: null, // Will store the latest date string
+                        invoices: [], // Store invoice IDs for updating
+                        customerKey: key // Store the key for easy reference
+                    };
+                }
+                const customer = aggregatedCustomerData[key];
+                // --- Aggregate Data ---
+                // 1. Address: Keep the latest one seen (assuming last invoice has most recent)
+                if (invoice.customerAddress && customer.address === 'N/A') {
+                     customer.address = invoice.customerAddress;
+                }
+                // 2. Financials: Parse and sum up grandTotal and amountPaid
+                let invoiceGrandTotal = 0;
+                let invoiceAmountPaid = 0;
+                if (invoice.grandTotal) {
+                    invoiceGrandTotal = parseFloat(invoice.grandTotal.replace(/[₹,]/g, '')) || 0;
+                }
+                if (invoice.amountPaid !== undefined) {
+                     invoiceAmountPaid = parseFloat(invoice.amountPaid) || 0;
+                }
+                customer.totalGrandTotal += invoiceGrandTotal;
+                customer.totalAmountPaid += invoiceAmountPaid;
+                // 3. Last Invoice Date: Compare and keep the latest
+                if (invoice.invoiceDate) {
+                    if (!customer.lastInvoiceDate || new Date(invoice.invoiceDate) > new Date(customer.lastInvoiceDate)) {
+                        customer.lastInvoiceDate = invoice.invoiceDate;
+                    }
+                }
+                // 4. Store invoice details for individual balance calculation (if needed for display per invoice)
+                // For now, we aggregate totals, so this might not be strictly necessary for the table view
+                // but useful for potential drill-down or detailed reports.
+                customer.invoices.push({
+                    id: invoiceId,
+                    grandTotal: invoiceGrandTotal,
+                    amountPaid: invoiceAmountPaid,
+                    invoiceDate: invoice.invoiceDate,
+                    paymentStatus: invoice.paymentStatus || 'Pending' // Capture current status
+                    // Add other relevant invoice fields if needed for actions
+                });
+            });
+            // Calculate derived fields for each customer
+            Object.values(aggregatedCustomerData).forEach(customer => {
+                 customer.balanceDue = customer.totalGrandTotal - customer.totalAmountPaid;
+                 // Format financials to currency
+                 customer.totalGrandTotalFormatted = formatCurrency(customer.totalGrandTotal);
+                 customer.totalAmountPaidFormatted = formatCurrency(customer.totalAmountPaid);
+                 customer.balanceDueFormatted = formatCurrency(customer.balanceDue);
+                 // Format last invoice date
+                 customer.formattedLastInvoiceDate = customer.lastInvoiceDate ? formatDate(customer.lastInvoiceDate) : 'N/A';
+                 // Determine overall payment status for the customer based on totals
+                 if (customer.balanceDue <= 0 && customer.totalGrandTotal > 0) {
+                     customer.paymentStatus = 'Paid';
+                     customer.paymentStatusClass = 'paid';
+                 } else if (customer.totalAmountPaid > 0 && customer.balanceDue > 0) {
+                     customer.paymentStatus = 'Partial';
+                     customer.paymentStatusClass = 'partial';
+                 } else if (customer.totalGrandTotal > 0) { // No payment made
+                     customer.paymentStatus = 'Pending';
+                     customer.paymentStatusClass = 'pending';
+                 } else { // No invoices or zero total (edge case)
+                     customer.paymentStatus = 'N/A';
+                     customer.paymentStatusClass = 'pending'; // Default class
+                 }
+            });
+            console.log("Aggregated customer ", aggregatedCustomerData);
+            populateCustomerTable(aggregatedCustomerData);
+            updateSummaryStats(aggregatedCustomerData);
+        }
+        // --- UI Population ---
+        function populateCustomerTable(customers) {
+            const tbody = document.getElementById('customerTableBody');
+            tbody.innerHTML = ''; // Clear existing rows
+            const searchTerm = document.getElementById('customerSearch').value.toLowerCase().trim();
+            const statusFilter = document.getElementById('paymentStatusFilter').value;
+            // Convert aggregated data object to array for sorting/filtering
+            const customerArray = Object.values(customers);
+            if (customerArray.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">No customer data found. Create invoices to see customers here.</td></tr>';
+                return;
+            }
+            // Filter based on search term and payment status
+            let filteredCustomers = customerArray.filter(customer =>
+                (customer.name.toLowerCase().includes(searchTerm) ||
+                customer.phone.includes(searchTerm)) &&
+                (statusFilter === 'all' || customer.paymentStatusClass === statusFilter)
+            );
+            if (filteredCustomers.length === 0) {
+                 tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">No customers match your search or filter criteria.</td></tr>';
+                 return;
+            }
+            // Sort customers, e.g., by balance due descending, then by name
+            filteredCustomers.sort((a, b) => {
+                if (b.balanceDue !== a.balanceDue) {
+                    return b.balanceDue - a.balanceDue; // Descending by balance due
+                }
+                return a.name.localeCompare(b.name); // Ascending by name if balance is equal
+            });
+            // Populate table rows
+            filteredCustomers.forEach(customer => {
+                 const row = document.createElement('tr');
+                 row.innerHTML = `
+                     <td>${customer.name}</td>
+                     <td>${customer.phone}</td>
+                     <td>${customer.address}</td>
+                     <td>${customer.totalGrandTotalFormatted}</td>
+                     <td>${customer.totalAmountPaidFormatted}</td>
+                     <td>${customer.balanceDueFormatted}</td>
+                     <td><span class="status-badge status-${customer.paymentStatusClass}">${customer.paymentStatus}</span></td>
+                     <td>${customer.formattedLastInvoiceDate}</td>
+                     <td>
+                        <button class="btn btn-secondary" onclick="openUpdatePaymentModal('${customer.customerKey}', '${encodeURIComponent(customer.name)}', '${customer.phone}', ${customer.totalGrandTotal}, ${customer.totalAmountPaid})">Update</button>
+                     </td>
+                 `;
+                 tbody.appendChild(row);
+            });
+        }
+        // --- Summary Stats ---
+        function updateSummaryStats(customers) {
+             const customerArray = Object.values(customers);
+             const totalCustomers = customerArray.length;
+             let totalBalance = 0;
+             let totalDueBalance = 0;
+             customerArray.forEach(customer => {
+                 totalBalance += customer.totalGrandTotal;
+                 totalDueBalance += customer.balanceDue; // balanceDue is already calculated
+             });
+             document.getElementById('totalCustomersCount').textContent = totalCustomers;
+             document.getElementById('totalBalance').textContent = formatCurrency(totalBalance);
+             document.getElementById('totalDueBalance').textContent = formatCurrency(totalDueBalance);
+        }
+        // --- PDF Generation ---
+        function downloadCustomerListPDF() {
+             const { jsPDF } = window.jspdf;
+             const doc = new jsPDF();
+             // Add title
+             doc.setFontSize(18);
+             doc.text('Customer List Report', 105, 20, null, null, 'center');
+             // Add date
+             const reportDate = new Date().toLocaleDateString('en-IN');
+             doc.setFontSize(12);
+             doc.text(`Generated on: ${reportDate}`, 105, 30, null, null, 'center');
+             // Prepare data for AutoTable
+             const customerArray = Object.values(aggregatedCustomerData);
+             const tableColumn = ["Name", "Phone", "Address", "Grand Total (₹)", "Amount Paid (₹)", "Balance Due (₹)", "Payment Status", "Last Invoice Date"];
+             const tableRows = [];
+             customerArray.forEach(customer => {
+                 const customerData = [
+                     customer.name,
+                     customer.phone,
+                     customer.address,
+                     customer.totalGrandTotalFormatted,
+                     customer.totalAmountPaidFormatted,
+                     customer.balanceDueFormatted,
+                     customer.paymentStatus,
+                     customer.formattedLastInvoiceDate
+                 ];
+                 tableRows.push(customerData);
+             });
+             // Generate the table
+             doc.autoTable({
+                 head: [tableColumn],
+                 body: tableRows,
+                 startY: 40,
+                 styles: {
+                     fontSize: 8,
+                     cellPadding: 2,
+                     overflow: 'linebreak'
+                 },
+                 columnStyles: {
+                     0: { cellWidth: 25 }, // Name
+                     1: { cellWidth: 20 }, // Phone
+                     2: { cellWidth: 30 }, // Address
+                     3: { cellWidth: 20 }, // Grand Total
+                     4: { cellWidth: 20 }, // Amount Paid
+                     5: { cellWidth: 20 }, // Balance Due
+                     6: { cellWidth: 15 }, // Payment Status
+                     7: { cellWidth: 20 }  // Last Invoice Date
+                 },
+                 headStyles: {
+                     fillColor: [102, 126, 234], // Match header color
+                     textColor: 255
+                 }
+             });
+             // Download the PDF
+             doc.save('customer_list_report.pdf');
+        }
+        // --- Update Payment Modal ---
+        function openUpdatePaymentModal(customerKey, customerName, customerPhone, grandTotal, amountPaid) {
+             const decodedName = decodeURIComponent(customerName);
+             document.getElementById('updateCustomerId').value = customerKey;
+             document.getElementById('updateCustomerName').value = decodedName;
+             document.getElementById('updateCustomerPhone').value = customerPhone;
+             document.getElementById('updateGrandTotal').value = formatCurrency(grandTotal);
+             document.getElementById('updateAmountPaid').value = amountPaid.toFixed(2);
+             // Initial balance due calculation
+             const balanceDue = grandTotal - amountPaid;
+             document.getElementById('updateBalanceDue').value = formatCurrency(balanceDue);
+             // Set initial status based on current values
+             let initialStatus = 'Pending';
+             if (balanceDue <= 0 && grandTotal > 0) {
+                 initialStatus = 'Paid';
+             } else if (amountPaid > 0 && balanceDue > 0) {
+                 initialStatus = 'Partial';
+             }
+             document.getElementById('updatePaymentStatus').value = initialStatus;
+             // Add real-time calculation for balance due and status
+             document.getElementById('updateAmountPaid').addEventListener('input', calculateBalanceAndStatus);
+             openModal('updatePaymentModal');
+        }
+        function calculateBalanceAndStatus() {
+             const grandTotalStr = document.getElementById('updateGrandTotal').value.replace(/[₹,]/g, '');
+             const amountPaidStr = document.getElementById('updateAmountPaid').value;
+             const grandTotal = parseFloat(grandTotalStr) || 0;
+             const amountPaid = parseFloat(amountPaidStr) || 0;
+             const balanceDue = grandTotal - amountPaid;
+             document.getElementById('updateBalanceDue').value = formatCurrency(balanceDue);
+             // Determine status based on input
+             let status = 'Pending';
+             if (amountPaid >= grandTotal && grandTotal > 0) {
+                 status = 'Paid';
+             } else if (amountPaid > 0 && amountPaid < grandTotal) {
+                 status = 'Partial';
+             }
+             document.getElementById('updatePaymentStatus').value = status;
+        }
+
+        // --- Modified Update Payment Function for Real Database Update ---
+        async function updateCustomerPayment() {
+            const customerKey = document.getElementById('updateCustomerId').value;
+            const amountPaidInput = document.getElementById('updateAmountPaid');
+            const newAmountPaidRaw = parseFloat(amountPaidInput.value);
+            const submitButton = document.getElementById('updatePaymentSubmitBtn');
+            const originalText = submitButton.innerHTML;
+
+            // Basic validation
+            if (isNaN(newAmountPaidRaw) || newAmountPaidRaw < 0) {
+                alert("Please enter a valid non-negative amount paid.");
+                return;
+            }
+
+            // Show loading state
+            submitButton.innerHTML = '<span class="loading"></span> Updating...';
+            submitButton.disabled = true;
+
+            try {
+                // Get the customer data from the local aggregated object
+                const customer = aggregatedCustomerData[customerKey];
+                if (!customer || !customer.invoices || customer.invoices.length === 0) {
+                    throw new Error("Customer data or invoices not found.");
+                }
+
+                const grandTotal = customer.totalGrandTotal;
+                let newAmountPaid = newAmountPaidRaw;
+                let newBalanceDue = grandTotal - newAmountPaid;
+
+                // Handle "Paid" status override
+                const selectedStatus = document.getElementById('updatePaymentStatus').value;
+                if (selectedStatus === 'Paid') {
+                    newAmountPaid = grandTotal; // Ensure amount paid equals grand total
+                    newBalanceDue = 0;           // Ensure balance is zero
+                    amountPaidInput.value = newAmountPaid.toFixed(2); // Reflect this in the input
+                }
+
+                // --- Distribute the new total paid amount across individual invoices ---
+                const invoiceUpdates = {};
+                const numInvoices = customer.invoices.length;
+                let remainingAmountToDistribute = newAmountPaid;
+
+                // Simple proportional distribution (you can implement other logic like FIFO if needed)
+                for (let i = 0; i < customer.invoices.length; i++) {
+                    const invoice = customer.invoices[i];
+                    const invoiceId = invoice.id;
+                    const invoiceGrandTotal = invoice.grandTotal;
+
+                    // Calculate the portion of the new total to assign to this invoice
+                    // This example uses proportional distribution based on invoice grand total
+                    let amountForThisInvoice;
+                    if (i === numInvoices - 1) {
+                        // Assign remaining amount to the last invoice to avoid rounding errors
+                        amountForThisInvoice = remainingAmountToDistribute;
+                    } else {
+                        // Proportional distribution
+                        const proportion = invoiceGrandTotal / grandTotal;
+                        amountForThisInvoice = Math.min(newAmountPaid * proportion, remainingAmountToDistribute);
+                    }
+                    // Ensure we don't go negative and adjust for potential floating point issues
+                    amountForThisInvoice = Math.max(0, Math.min(amountForThisInvoice, remainingAmountToDistribute));
+                    remainingAmountToDistribute -= amountForThisInvoice;
+
+                    // Calculate new values for this specific invoice
+                    const newInvoiceAmountPaid = parseFloat(amountForThisInvoice.toFixed(2));
+                    const newInvoiceBalanceDue = parseFloat((invoiceGrandTotal - newInvoiceAmountPaid).toFixed(2));
+
+                    // Determine new payment status for this invoice
+                    let newInvoicePaymentStatus = 'Pending';
+                    if (newInvoiceBalanceDue <= 0 && invoiceGrandTotal > 0) {
+                        newInvoicePaymentStatus = 'Paid';
+                    } else if (newInvoiceAmountPaid > 0 && newInvoiceBalanceDue > 0) {
+                        newInvoicePaymentStatus = 'Partial';
+                    }
+
+                    // Prepare the update object for this invoice
+                    invoiceUpdates[`invoices/${invoiceId}/amountPaid`] = newInvoiceAmountPaid;
+                    invoiceUpdates[`invoices/${invoiceId}/balanceDue`] = newInvoiceBalanceDue;
+                    invoiceUpdates[`invoices/${invoiceId}/paymentStatus`] = newInvoicePaymentStatus;
+                }
+
+                // --- Perform the batch update in Firebase ---
+                console.log("Updating invoices in Firebase:", invoiceUpdates);
+                await database.ref().update(invoiceUpdates);
+
+                // --- Update the local aggregated data after successful database update ---
+                // Recalculate the aggregated totals based on the *new* invoice data we just sent
+                customer.totalAmountPaid = newAmountPaid;
+                customer.balanceDue = newBalanceDue;
+
+                // Recalculate status based on new aggregated values
+                if (customer.balanceDue <= 0 && customer.totalGrandTotal > 0) {
+                    customer.paymentStatus = 'Paid';
+                    customer.paymentStatusClass = 'paid';
+                } else if (customer.totalAmountPaid > 0 && customer.balanceDue > 0) {
+                    customer.paymentStatus = 'Partial';
+                    customer.paymentStatusClass = 'partial';
+                } else if (customer.totalGrandTotal > 0) {
+                    customer.paymentStatus = 'Pending';
+                    customer.paymentStatusClass = 'pending';
+                }
+
+                // Update formatted values
+                customer.totalAmountPaidFormatted = formatCurrency(customer.totalAmountPaid);
+                customer.balanceDueFormatted = formatCurrency(customer.balanceDue);
+
+                // --- Refresh UI ---
+                populateCustomerTable(aggregatedCustomerData);
+                updateSummaryStats(aggregatedCustomerData); // Update summary cards
+
+                console.log(`Customer payment updated successfully for key: ${customerKey}`);
+                alert("Customer payment information updated successfully in the database.");
+                closeModal('updatePaymentModal');
+
+            } catch (error) {
+                console.error("Error updating customer payment:", error);
+                alert("Failed to update customer payment: " + error.message);
+                showConnectionError(); // Show error indicator
+            } finally {
+                // Reset button state and remove event listener
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+                document.getElementById('updateAmountPaid').removeEventListener('input', calculateBalanceAndStatus);
+            }
+        }
+
+        // --- Utility Functions ---
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            // Handle potential date object or string
+            const dateObj = new Date(dateString);
+            if (isNaN(dateObj)) return 'Invalid Date'; // Handle invalid dates
+            return dateObj.toLocaleDateString('en-IN', options);
+        }
+        function showConnectionError() {
+            document.getElementById('connectionStatus').style.display = 'block';
+        }
+        function hideConnectionError() {
+            document.getElementById('connectionStatus').style.display = 'none';
+        }
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex'; // Use flex for centering
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            document.body.style.overflow = 'auto'; // Restore scrolling
+        }
+    </script>
+</body>
+</html>

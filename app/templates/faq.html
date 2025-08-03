@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Frequently Asked Questions - Dhangadhi False Ceiling{% endblock %}
+{% block meta_description %}Find answers to common questions about false ceiling installation, materials, pricing, and more from Dhangadhi False Ceiling in Nepal.{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<section class="bg-light py-5">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold gradient-text mb-3 text-shadow" data-aos="fade-up">Frequently Asked Questions</h1>
+        <nav aria-label="breadcrumb" data-aos="fade-up" data-aos-delay="100">
+            <ol class="breadcrumb justify-content-center bg-transparent">
+                <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-primary text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item active text-warning" aria-current="page">FAQ</li>
+            </ol>
+        </nav>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="section-padding bg-white">
+    <div class="container">
+        <!-- Search Bar -->
+        <div class="row justify-content-center mb-5">
+            <div class="col-lg-6" data-aos="fade-up">
+                <div class="glass-card p-4">
+                    <h5 class="fw-bold mb-3">Search FAQs</h5>
+                    <form method="get" action="{% url 'faq' %}">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="faqSearch" name="q" 
+                                   placeholder="Search questions..." aria-label="Search FAQs" 
+                                   value="{{ search_query|default:'' }}">
+                            <button class="btn btn-primary-custom" type="submit"><i class="fas fa-search"></i></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ Accordion -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8" data-aos="fade-up" data-aos-delay="100">
+                <div class="accordion" id="faqAccordion">
+                    {% for faq in faqs %}
+                    <div class="accordion-item glass-card mb-3">
+                        <h2 class="accordion-header" id="faqHeading{{ faq.id }}">
+                            <button class="accordion-button fw-bold {% if forloop.first %}show{% else %}collapsed{% endif %}" 
+                                    type="button" 
+                                    data-bs-toggle="collapse" 
+                                    data-bs-target="#faqCollapse{{ faq.id }}" 
+                                    aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" 
+                                    aria-controls="faqCollapse{{ faq.id }}">
+                                {{ faq.question }}
+                            </button>
+                        </h2>
+                        <div id="faqCollapse{{ faq.id }}" 
+                             class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" 
+                             aria-labelledby="faqHeading{{ faq.id }}" 
+                             data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                {{ faq.answer|safe }}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-center">No FAQs available at the moment.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="gradient-bg text-white text-center section-padding">
+    <div class="container">
+        <h2 class="display-5 fw-bold mb-4" data-aos="fade-up">Still Have Questions?</h2>
+        <p class="lead mb-4" data-aos="fade-up" data-aos-delay="100">Our team is here to help with all your false ceiling queries!</p>
+        <div class="d-flex justify-content-center gap-3" data-aos="fade-up" data-aos-delay="200">
+            <a href="{% url 'contact' %}" class="btn btn-primary-custom btn-lg pulse-glow d-block d-lg-inline">Contact Us</a>
+            <a href="{% url 'estimate_calculator' %}" class="btn btn-outline-light btn-lg d-block d-lg-inline">Get a Quote</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // FAQ Search Functionality (Client-Side Fallback)
+    function searchFAQs() {
+        const searchInput = document.getElementById('faqSearch').value.toLowerCase();
+        const accordionItems = document.querySelectorAll('.accordion-item');
+
+        accordionItems.forEach(item => {
+            const question = item.querySelector('.accordion-button').textContent.toLowerCase();
+            const answer = item.querySelector('.accordion-body').textContent.toLowerCase();
+            if (question.includes(searchInput) || answer.includes(searchInput)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    // Trigger client-side search on input (optional, since server-side search is implemented)
+    document.getElementById('faqSearch').addEventListener('input', searchFAQs);
+</script>
+{% endblock %}

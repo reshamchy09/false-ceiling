@@ -1,0 +1,481 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Blog - Latest False Ceiling Articles & Tips{% endblock %}
+{% block meta_description %}Stay updated with latest false ceiling design trends, installation tips, and maintenance guides. Expert insights from Dhangadhi False Ceiling professionals.{% endblock %}
+
+{% block content %}
+<!-- Blog Hero Section -->
+<section class="hero-section d-flex align-items-center">
+    <div class="container position-relative z-index-1">
+        <div class="row align-items-center min-vh-100 py-5">
+            <div class="col-lg-8 mx-auto text-center text-white">
+                <nav aria-label="breadcrumb" data-aos="fade-up">
+                    <ol class="breadcrumb justify-content-center bg-transparent">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-white-50 text-decoration-none">Home</a></li>
+                        <li class="breadcrumb-item active text-white">Blog</li>
+                    </ol>
+                </nav>
+                
+                <h1 class="display-4 fw-bold mb-4 text-shadow floating" data-aos="fade-up" data-aos-delay="100">
+                    <i class="fas fa-newspaper text-warning me-3"></i>
+                    Latest Articles & Tips
+                </h1>
+                
+                <p class="lead mb-4 text-white-75" data-aos="fade-up" data-aos-delay="200">
+                    Discover expert insights on false ceiling design, installation techniques, 
+                    maintenance tips, and the latest trends in ceiling solutions.
+                </p>
+                
+                <div class="search-container" data-aos="fade-up" data-aos-delay="300">
+                    <form method="GET" class="d-flex justify-content-center">
+                        <div class="input-group" style="max-width: 500px;">
+                            <input type="text" name="search" class="form-control form-control-lg" 
+                                   placeholder="Search articles..." value="{{ request.GET.search }}">
+                            <button class="btn btn-primary-custom" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Blog Content Section -->
+<section class="section-padding bg-light">
+    <div class="container">
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8">
+                <!-- Featured Article -->
+                {% if featured_post %}
+                <div class="featured-article mb-5" data-aos="fade-up">
+                    <div class="card border-0 shadow-lg overflow-hidden">
+                        <div class="position-relative">
+                            <img src="{{ featured_post.image.url|default:'/static/images/blog/default-blog.jpg' }}" 
+                                 class="card-img-top" alt="{{ featured_post.title }}" style="height: 300px; object-fit: cover;">
+                            <div class="position-absolute top-0 start-0 m-3">
+                                <span class="badge bg-primary fs-6">Featured</span>
+                            </div>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3 text-muted">
+                                <i class="fas fa-calendar me-2"></i>
+                                <span>{{ featured_post.created_at|date:"F d, Y" }}</span>
+                                {% if featured_post.category %}
+                                <span class="mx-2">•</span>
+                                <i class="fas fa-tag me-2"></i>
+                                <span>{{ featured_post.category.name }}</span>
+                                {% endif %}
+                                <span class="mx-2">•</span>
+                                <i class="fas fa-clock me-2"></i>
+                                <span>5 min read</span>
+                            </div>
+                            <h2 class="card-title h3 mb-3">
+                                <a href="{% url 'blog_detail' featured_post.slug %}" class="text-decoration-none text-dark">
+                                    {{ featured_post.title }}
+                                </a>
+                            </h2>
+                            <p class="card-text text-muted mb-4">{{ featured_post.excerpt|truncatewords:30 }}</p>
+                            <a href="{% url 'blog_detail' featured_post.slug %}" class="btn btn-primary-custom">
+                                <i class="fas fa-arrow-right me-2"></i>Read Full Article
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Filter Tabs -->
+                <div class="filter-tabs mb-4" data-aos="fade-up">
+                    <ul class="nav nav-pills justify-content-center bg-white rounded-3 shadow-sm p-2">
+                        <li class="nav-item">
+                            <a class="nav-link {% if not current_category %}active{% endif %}" 
+                               href="{% url 'blog' %}">All Articles</a>
+                        </li>
+                        {% for category in categories %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if current_category == category %}active{% endif %}" 
+                               href="{% url 'blog' %}?category={{ category.slug }}">{{ category.name }}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Blog Posts Grid -->
+                <div class="row">
+                    {% for post in posts %}
+            
+                        <article class="card h-100 border-0 shadow card-hover">
+                            <div class="position-relative overflow-hidden">
+                                <img src="{{ post.image.url|default:'/static/images/blog/default-blog.jpg' }}" 
+                                     class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
+                                {% if post.category %}
+                                <div class="position-absolute top-0 start-0 m-3">
+                                    <span class="badge bg-secondary">{{ post.category.name }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="card-body d-flex flex-column p-4">
+                                <div class="d-flex align-items-center mb-3 text-muted small">
+                                    <i class="fas fa-calendar me-2"></i>
+                                    <span>{{ post.created_at|date:"M d, Y" }}</span>
+                                    <span class="mx-2">•</span>
+                                    <i class="fas fa-eye me-2"></i>
+                                    <span>{{ post.views|default:0 }} views</span>
+                                </div>
+                                
+                                <h5 class="card-title mb-3">
+                                    <a href="{% url 'blog_detail' post.slug %}" class="text-decoration-none text-dark">
+                                        {{ post.title }}
+                                    </a>
+                                </h5>
+                                
+                                <p class="card-text text-muted flex-grow-1">
+                                    {{ post.excerpt|truncatewords:20 }}
+                                </p>
+                                
+                                <div class="d-flex justify-content-between align-items-center mt-auto">
+                                    <a href="{% url 'blog_detail' post.slug %}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-arrow-right me-1"></i>Read More
+                                    </a>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-sm btn-light" data-bs-toggle="tooltip" title="Share">
+                                            <i class="fas fa-share-alt"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-light" data-bs-toggle="tooltip" title="Bookmark">
+                                            <i class="far fa-bookmark"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                    {% empty %}
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No articles found</h4>
+                        <p class="text-muted">Try adjusting your search or browse all categories.</p>
+                        <a href="{% url 'blog' %}" class="btn btn-primary-custom">View All Articles</a>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if posts.has_other_pages %}
+                <nav aria-label="Blog pagination" class="mt-5" data-aos="fade-up">
+                    <ul class="pagination justify-content-center">
+                        {% if posts.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ posts.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in posts.paginator.page_range %}
+                        {% if posts.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > posts.number|add:'-3' and num < posts.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+                        
+                        {% if posts.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ posts.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <div class="sidebar">
+                    <!-- Newsletter Signup -->
+                    <div class="card border-0 shadow-sm mb-4" data-aos="fade-left">
+                        <div class="card-body text-center p-4">
+                            <div class="gradient-bg text-white rounded-3 p-3 mb-3">
+                                <i class="fas fa-envelope fa-2x"></i>
+                            </div>
+                            <h5 class="card-title">Stay Updated</h5>
+                            <p class="text-muted small mb-3">Get the latest ceiling design tips and industry insights delivered to your inbox.</p>
+                            <form class="newsletter-form">
+                                <div class="input-group mb-3">
+                                    <input type="email" class="form-control" placeholder="Your email address" required>
+                                    <button class="btn btn-primary-custom" type="submit">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Categories -->
+                    <div class="card border-0 shadow-sm mb-4" data-aos="fade-left" data-aos-delay="100">
+                        <div class="card-header bg-transparent border-0 pb-0">
+                            <h6 class="mb-0"><i class="fas fa-folder-open me-2 text-primary"></i>Categories</h6>
+                        </div>
+                        <div class="card-body pt-3">
+                            <ul class="list-unstyled">
+                                {% for category in categories %}
+                                <li class="mb-2">
+                                    <a href="{% url 'blog' %}?category={{ category.slug }}" 
+                                       class="text-decoration-none d-flex justify-content-between align-items-center p-2 rounded hover-bg-light">
+                                        <span>{{ category.name }}</span>
+                                        <span class="badge bg-light text-dark">{{ category.post_count|default:0 }}</span>
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Recent Posts -->
+                    <div class="card border-0 shadow-sm mb-4" data-aos="fade-left" data-aos-delay="200">
+                        <div class="card-header bg-transparent border-0 pb-0">
+                            <h6 class="mb-0"><i class="fas fa-clock me-2 text-primary"></i>Recent Posts</h6>
+                        </div>
+                        <div class="card-body pt-3">
+                            {% for post in recent_posts %}
+                            <div class="d-flex mb-3">
+                                <img src="{{ post.image.url|default:'/static/images/blog/default-blog.jpg' }}" 
+                                     class="rounded me-3" alt="{{ post.title }}" 
+                                     style="width: 60px; height: 60px; object-fit: cover;">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <a href="{% url 'blog_detail' post.slug %}" class="text-decoration-none text-dark">
+                                            {{ post.title|truncatechars:40 }}
+                                        </a>
+                                    </h6>
+                                    <small class="text-muted">{{ post.created_at|date:"M d, Y" }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Popular Tags -->
+                    <div class="card border-0 shadow-sm mb-4" data-aos="fade-left" data-aos-delay="300">
+                        <div class="card-header bg-transparent border-0 pb-0">
+                            <h6 class="mb-0"><i class="fas fa-tags me-2 text-primary"></i>Popular Tags</h6>
+                        </div>
+                        <div class="card-body pt-3">
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for tag in popular_tags %}
+                                <a href="{% url 'blog' %}?tag={{ tag.name }}" class="badge bg-light text-dark text-decoration-none p-2">
+                                    #{{ tag.name }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact CTA -->
+                    <div class="card border-0 shadow-sm" data-aos="fade-left" data-aos-delay="400">
+                        <div class="card-body text-center p-4">
+                            <div class="gradient-bg text-white rounded-3 p-3 mb-3">
+                                <i class="fas fa-phone fa-2x"></i>
+                            </div>
+                            <h5 class="card-title">Need Expert Advice?</h5>
+                            <p class="text-muted small mb-3">Our ceiling specialists are ready to help with your project.</p>
+                            <div class="d-grid gap-2">
+                                <a href="tel:9822662207" class="btn btn-primary-custom">
+                                    <i class="fas fa-phone me-2"></i>Call Now
+                                </a>
+                                <a href="{% url 'contact' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-envelope me-2"></i>Send Message
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action -->
+<section class="gradient-bg text-white py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8" data-aos="fade-right">
+                <h3 class="mb-3">Ready to Transform Your Space?</h3>
+                <p class="mb-4 mb-lg-0">Get expert false ceiling solutions from Nepal's trusted professionals. Free consultation and competitive pricing guaranteed.</p>
+            </div>
+            <div class="col-lg-4 text-lg-end" data-aos="fade-left">
+                <a href="{% url 'contact' %}" class="btn btn-light btn-lg me-3">Get Free Quote</a>
+                <a href="{% url 'portfolio' %}" class="btn btn-outline-light btn-lg">View Our Work</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Blog Post Detail Modal (for quick preview) -->
+<div class="modal fade" id="postPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Article Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Content will be loaded dynamically -->
+                <div class="text-center py-5">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" class="btn btn-primary-custom" id="readFullArticle">Read Full Article</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Newsletter subscription
+    document.querySelector('.newsletter-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const email = this.querySelector('input[type="email"]').value;
+        
+        // Show success message
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalContent = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-check"></i>';
+        submitBtn.classList.remove('btn-primary-custom');
+        submitBtn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            submitBtn.innerHTML = originalContent;
+            submitBtn.classList.remove('btn-success');
+            submitBtn.classList.add('btn-primary-custom');
+            this.reset();
+        }, 2000);
+    });
+
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Social sharing
+    function sharePost(url, platform) {
+        let shareUrl = '';
+        switch(platform) {
+            case 'facebook':
+                shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+                break;
+            case 'twitter':
+                shareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`;
+                break;
+            case 'whatsapp':
+                shareUrl = `https://wa.me/?text=${encodeURIComponent(url)}`;
+                break;
+        }
+        if (shareUrl) {
+            window.open(shareUrl, '_blank', 'width=600,height=400');
+        }
+    }
+
+    // Search functionality enhancement
+    const searchForm = document.querySelector('.search-container form');
+    const searchInput = searchForm.querySelector('input[name="search"]');
+    
+    // Add search suggestions (if you implement this in Django)
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        if (query.length > 2) {
+            // You can implement AJAX search suggestions here
+        }
+    });
+
+    // Smooth category filtering
+    document.querySelectorAll('.nav-pills .nav-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            if (this.href.includes('category=')) {
+                e.preventDefault();
+                const url = new URL(this.href);
+                const category = url.searchParams.get('category');
+                
+                // Add loading state
+                document.querySelectorAll('.card-hover').forEach(card => {
+                    card.style.opacity = '0.5';
+                });
+                
+                // Navigate to filtered results
+                window.location.href = this.href;
+            }
+        });
+    });
+</script>
+
+<style>
+    .hover-bg-light:hover {
+        background-color: #f8f9fa !important;
+    }
+    
+    .sidebar .card {
+        transition: all 0.3s ease;
+    }
+    
+    .sidebar .card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .filter-tabs .nav-pills .nav-link {
+        color: #6c757d;
+        border-radius: 25px;
+        padding: 10px 20px;
+        margin: 0 5px;
+        transition: all 0.3s ease;
+    }
+    
+    .filter-tabs .nav-pills .nav-link:hover,
+    .filter-tabs .nav-pills .nav-link.active {
+        background: linear-gradient(135deg, var(--primary-color) 0%, #1d4ed8 100%);
+        color: white;
+        transform: translateY(-1px);
+    }
+    
+    .featured-article .card {
+        transition: all 0.3s ease;
+    }
+    
+    .featured-article .card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .pagination .page-link {
+        border-radius: 25px;
+        margin: 0 2px;
+        border: none;
+        color: var(--primary-color);
+        transition: all 0.3s ease;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    .pagination .page-link:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
