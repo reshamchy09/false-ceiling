@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Our Portfolio - Dhangadhi False Ceiling{% endblock %}
+{% block meta_description %}Explore our portfolio of completed false ceiling projects in Dhangadhi, Nepal. View stunning designs in Gypsum, POP, PVC, Wooden, and more.{% endblock %}
+
+{% block content %}
+<!-- Modern Hero Header with Gradient -->
+<section class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 100px 0 80px;">
+    <div class="container text-center position-relative">
+        <h1 class="display-3 fw-bold text-white mb-3" data-aos="fade-down">Project Gallery</h1>
+        <p class="lead text-white-50 mb-4" data-aos="fade-up" data-aos-delay="100">Explore our completed works across Dhangadhi, Nepal</p>
+        <nav class="d-inline-flex align-items-center bg-white bg-opacity-10 backdrop-blur rounded-pill px-4 py-2" data-aos="fade-up" data-aos-delay="200">
+            <a href="{% url 'index' %}" class="text-decoration-none text-white me-2 hover-opacity">Home</a>
+            <span class="text-white-50 mx-2">›</span>
+            <span class="text-white">Portfolio</span>
+        </nav>
+    </div>
+</section>
+
+<!-- Portfolio Section -->
+<section class="py-5 bg-light">
+    <div class="container py-4">
+
+        <!-- Filter Tabs with Modern Pills -->
+        <div class="d-flex justify-content-center mb-5" data-aos="fade-up">
+            <div class="bg-white shadow-sm rounded-pill p-2">
+                <ul class="nav nav-pills gap-2 m-0">
+                    <li class="nav-item">
+                        <a class="nav-link px-4 py-2 rounded-pill {% if selected_category == 'all' %}active{% endif %}" 
+                           style="{% if selected_category == 'all' %}background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;{% else %}color: #666;{% endif %}"
+                           href="?category=all">All</a>
+                    </li>
+                    {% for category_value, category_name in categories %}
+                    <li class="nav-item">
+                        <a class="nav-link px-4 py-2 rounded-pill {% if selected_category == category_value %}active{% endif %}"
+                           style="{% if selected_category == category_value %}background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;{% else %}color: #666;{% endif %}"
+                           href="?category={{ category_value }}">{{ category_name }}</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Portfolio Grid -->
+        <div class="row g-4">
+            {% for project in projects %}
+            <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:'50' }}">
+                <div class="card border-0 shadow-sm h-100 overflow-hidden card-hover">
+                    <!-- Image with Overlay -->
+                    <div class="position-relative overflow-hidden" style="height: 260px;">
+                        <img src="{{ project.image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ project.title }}">
+                        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center overlay-fade">
+                            <a href="{{ project.image.url }}" class="btn btn-light rounded-circle p-3 shadow" data-lightbox="portfolio" data-title="{{ project.title }}">
+                                <i class="fas fa-search-plus"></i>
+                            </a>
+                        </div>
+                        <!-- Badge -->
+                        <div class="position-absolute top-0 end-0 m-3">
+                            <span class="badge rounded-pill px-3 py-2 shadow-sm bg-white text-primary fw-semibold">
+                                {{ project.material_used }}
+                            </span>
+                        </div>
+                    </div>
+                    <!-- Card Body -->
+                    <div class="card-body p-4 text-center">
+                        <h5 class="fw-bold mb-2">{{ project.title }}</h5>
+                        <p class="text-muted small mb-1"><i class="fas fa-map-marker-alt me-1 text-primary"></i>{{ project.location }}</p>
+                        <p class="text-muted small mb-2"><i class="fas fa-calendar-alt me-1 text-primary"></i>{{ project.completed_date|date:"F d, Y" }}</p>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <p class="text-muted fs-5">No projects found for this category.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if projects.has_other_pages %}
+        <nav aria-label="Page navigation" class="mt-5" data-aos="fade-up">
+            <ul class="pagination justify-content-center gap-2">
+                {% if projects.has_previous %}
+                <li class="page-item">
+                    <a class="page-link border-0 rounded-circle shadow-sm" 
+                       href="?category={{ selected_category }}&page={{ projects.previous_page_number }}">←</a>
+                </li>
+                {% endif %}
+                {% for num in projects.paginator.page_range %}
+                <li class="page-item">
+                    <a class="page-link border-0 rounded-circle shadow-sm {% if projects.number == num %}text-white{% endif %}" 
+                       href="?category={{ selected_category }}&page={{ num }}"
+                       style="{% if projects.number == num %}background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endfor %}
+                {% if projects.has_next %}
+                <li class="page-item">
+                    <a class="page-link border-0 rounded-circle shadow-sm" 
+                       href="?category={{ selected_category }}&page={{ projects.next_page_number }}">→</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <h2 class="display-5 fw-bold text-center mb-5 gradient-text" data-aos="fade-up">What Our Clients Say</h2>
+        <div class="row g-4">
+            {% for testimonial in testimonials %}
+            <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:'50' }}">
+                <div class="p-4 shadow-sm rounded bg-light h-100">
+                    <p class="text-muted mb-3">"{{ testimonial.message }}"</p>
+                    <div class="d-flex align-items-center">
+                        {% if testimonial.image %}
+                        <img src="{{ testimonial.image.url }}" alt="{{ testimonial.name }}" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                        {% endif %}
+                        <div>
+                            <h6 class="fw-bold mb-0">{{ testimonial.name }}</h6>
+                            {% if testimonial.location %}
+                            <p class="text-muted small mb-0">{{ testimonial.location }}</p>
+                            {% endif %}
+                            <div class="star-rating">
+                                {% for i in "12345" %}
+                                <i class="fas fa-star {% if i|add:0 <= testimonial.rating %}text-warning{% else %}text-muted{% endif %}"></i>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center">
+                <p>No testimonials available at the moment.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 100px 0;">
+    <div class="container text-center position-relative">
+        <h2 class="display-5 fw-bold text-white mb-4" data-aos="zoom-in">Want a Design Like This?</h2>
+        <p class="lead text-white mb-5 opacity-90" data-aos="zoom-in" data-aos-delay="100">Transform your space with our expert false ceiling solutions tailored to your vision.</p>
+        <a href="{% url 'contact' %}" class="btn btn-light btn-lg px-5 py-3 rounded-pill shadow-lg fw-semibold" data-aos="zoom-in" data-aos-delay="200">Contact Us Now</a>
+    </div>
+</section>
+
+<!-- Extra Styles -->
+<style>
+    .card-hover:hover { transform: translateY(-8px); box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important; }
+    .overlay-fade { background: linear-gradient(135deg, rgba(102,126,234,0.85), rgba(118,75,162,0.85)); opacity: 0; transition: opacity 0.3s ease; }
+    .card:hover .overlay-fade { opacity: 1; }
+    .nav-link:not(.active):hover { background: rgba(102,126,234,0.1) !important; color: #667eea !important; }
+    .page-link:hover { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%) !important; color: #fff !important; transform: scale(1.1); }
+</style>
+{% endblock %}

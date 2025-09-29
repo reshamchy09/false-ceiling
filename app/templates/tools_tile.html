@@ -1,0 +1,519 @@
+{% extends 'base.html' %}
+
+{% block title %}False Ceiling Calculator - Dhangadhi False Ceiling{% endblock %}
+
+{% block meta_description %}Calculate material requirements and board layout for your false ceiling project in Dhangadhi, Nepal. Get instant estimates for gypsum, POP, PVC ceiling materials.{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section d-flex align-items-center">
+    <div class="container position-relative z-3">
+        <div class="row align-items-center min-vh-100">
+            <div class="col-lg-6" data-aos="fade-right">
+                <h1 class="display-4 fw-bold text-white mb-4 text-shadow">
+                    False Ceiling <span class="text-warning">Calculator</span>
+                </h1>
+                <p class="lead text-light mb-4">
+                    Get instant material estimates and visualize board layout for your false ceiling project. 
+                    Professional calculations for accurate planning and budgeting.
+                </p>
+                <div class="d-flex gap-3 mb-4">
+                    <div class="glass-card p-3 text-center">
+                        <i class="fas fa-calculator text-warning fs-4 mb-2"></i>
+                        <div class="text-white small">Material Calculator</div>
+                    </div>
+                    <div class="glass-card p-3 text-center">
+                        <i class="fas fa-th text-warning fs-4 mb-2"></i>
+                        <div class="text-white small">Board Visualizer</div>
+                    </div>
+                    <div class="glass-card p-3 text-center">
+                        <i class="fas fa-print text-warning fs-4 mb-2"></i>
+                        <div class="text-white small">Print Report</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6" data-aos="fade-left">
+                <div class="glass-card p-4 floating">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-building fs-1 text-warning mb-3"></i>
+                        <h3 class="text-white fw-bold">Quick Estimate</h3>
+                        <p class="text-light small">Enter dimensions below to get started</p>
+                    </div>
+                    
+                    <!-- Calculator Form -->
+                    <form id="calculatorForm">
+                        <div class="mb-3">
+                            <label for="length" class="form-label text-white fw-semibold">
+                                <i class="fas fa-ruler-horizontal me-2"></i>Room Length (feet)
+                            </label>
+                            <input type="number" class="form-control" id="length" name="length" 
+                                   placeholder="Enter length in feet" min="1" step="0.1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="width" class="form-label text-white fw-semibold">
+                                <i class="fas fa-ruler-vertical me-2"></i>Room Width (feet)
+                            </label>
+                            <input type="number" class="form-control" id="width" name="width" 
+                                   placeholder="Enter width in feet" min="1" step="0.1" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="amount" class="form-label text-white fw-semibold">
+                                <i class="fas fa-rupee-sign me-2"></i>Cost per Square Foot (NPR, optional)
+                            </label>
+                            <input type="number" class="form-control" id="amount" name="amount" 
+                                   placeholder="Enter cost per sq. ft." min="0" step="0.01">
+                        </div>
+                        <button type="submit" class="btn btn-primary-custom w-100 pulse-glow">
+                            <i class="fas fa-calculator me-2"></i>Calculate Materials & Layout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Results Section -->
+<section class="section-padding bg-light">
+    <div class="container">
+        <!-- Print Header (only visible when printing) -->
+        <div class="print-header d-none">
+            <div class="text-center mb-4 pb-3 border-bottom">
+                <h1 class="fw-bold">False Ceiling Calculator Report</h1>
+                <p class="text-muted">Dhangadhi False Ceiling - Material Estimation & Board Layout</p>
+                <p class="small">Generated on: <span id="printDate"></span></p>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error" class="alert alert-danger text-center" style="display: none;" data-aos="fade-up">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Please enter valid positive numbers for length and width.
+        </div>
+
+        <!-- Results Container -->
+        <div id="resultsContainer" style="display: none;">
+            <!-- Material Estimates -->
+            <div class="row mb-5" data-aos="fade-up">
+                <div class="col-12">
+                    <div class="card-hover bg-white rounded-4 shadow-lg p-4">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-list-ul fs-1 text-primary mb-3"></i>
+                            <h2 class="fw-bold gradient-text">Material Requirements</h2>
+                            <p class="text-muted">Complete list of materials needed for your project</p>
+                        </div>
+                        
+                        <div class="row g-4">
+                            <div class="col-md-6 col-lg-4">
+                                <div class="glass-card p-4 text-center h-100">
+                                    <i class="fas fa-expand-arrows-alt text-primary fs-3 mb-3"></i>
+                                    <h5 class="fw-bold text-dark">Total Area</h5>
+                                    <p class="fs-4 fw-bold text-primary mb-0" id="sq_ft">--</p>
+                                    <small class="text-muted">Square Feet</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <div class="glass-card p-4 text-center h-100">
+                                    <i class="fas fa-minus text-warning fs-3 mb-3"></i>
+                                    <h5 class="fw-bold text-dark">Main Tee</h5>
+                                    <p class="fs-4 fw-bold text-warning mb-0" id="main_tee">--</p>
+                                    <small class="text-muted">Linear Feet</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <div class="glass-card p-4 text-center h-100">
+                                    <i class="fas fa-border-all text-success fs-3 mb-3"></i>
+                                    <h5 class="fw-bold text-dark">Wall Angle</h5>
+                                    <p class="fs-4 fw-bold text-success mb-0" id="wall_angle">--</p>
+                                    <small class="text-muted">Linear Feet</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <div class="glass-card p-4 text-center h-100">
+                                    <i class="fas fa-grip-lines text-info fs-3 mb-3"></i>
+                                    <h5 class="fw-bold text-dark">4-Foot Cross Tee</h5>
+                                    <p class="fs-4 fw-bold text-info mb-0" id="four_foot_channel">--</p>
+                                    <small class="text-muted">Linear Feet</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <div class="glass-card p-4 text-center h-100">
+                                    <i class="fas fa-grip-lines-vertical text-danger fs-3 mb-3"></i>
+                                    <h5 class="fw-bold text-dark">2-Foot Cross Tee</h5>
+                                    <p class="fs-4 fw-bold text-danger mb-0" id="two_foot_channel">--</p>
+                                    <small class="text-muted">Linear Feet</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <div class="glass-card p-4 text-center h-100">
+                                    <i class="fas fa-th-large text-purple fs-3 mb-3"></i>
+                                    <h5 class="fw-bold text-dark">Ceiling Boards</h5>
+                                    <p class="fs-4 fw-bold text-purple mb-0" id="board_needed">--</p>
+                                    <small class="text-muted">Pieces (2x2 ft)</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cost Estimate -->
+                        <div id="cost_section" class="text-center mt-4 p-4 gradient-bg rounded-4" style="display: none;">
+                            <h4 class="text-white fw-bold mb-2">
+                                <i class="fas fa-rupee-sign me-2"></i>Estimated Total Cost
+                            </h4>
+                            <p class="fs-2 fw-bold text-warning mb-0" id="total_cost">--</p>
+                            <small class="text-light">*Material cost only, labor charges separate</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Board Layout Visualization -->
+            <div class="row" data-aos="fade-up">
+                <div class="col-12">
+                    <div class="card-hover bg-white rounded-4 shadow-lg p-4">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-th fs-1 text-primary mb-3"></i>
+                            <h2 class="fw-bold gradient-text">Board Layout Visualization</h2>
+                            <p class="text-muted">Visual representation of how boards will be arranged</p>
+                        </div>
+                        
+                        <!-- Board Summary -->
+                        <div id="board-summary" class="mb-4">
+                            <div class="row text-center g-3">
+                                <div class="col-6 col-md-3">
+                                    <div class="glass-card p-3">
+                                        <div class="fw-bold text-primary fs-5" id="room_size">-- × -- ft</div>
+                                        <small class="text-muted">Room Size</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="glass-card p-3">
+                                        <div class="fw-bold text-success fs-5" id="total_boards">--</div>
+                                        <small class="text-muted">Total Boards</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="glass-card p-3">
+                                        <div class="fw-bold text-warning fs-5" id="full_boards">--</div>
+                                        <small class="text-muted">Full Boards</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="glass-card p-3">
+                                        <div class="fw-bold text-info fs-5" id="partial_boards">--</div>
+                                        <small class="text-muted">Partial Boards</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Grid Visualization -->
+                        <div class="grid-container bg-light rounded-3 p-4">
+                            <div class="text-center mb-3">
+                                <h5 class="fw-bold text-dark">Board Arrangement</h5>
+                                <p class="text-muted small">Each square represents a 2x2 feet ceiling board</p>
+                            </div>
+                            <div class="d-flex justify-content-center">
+                                <div id="grid" class="grid"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div id="actionButtons" class="text-center mt-5" style="display: none;" data-aos="fade-up">
+            <div class="d-flex flex-wrap justify-content-center gap-3">
+                <button type="button" class="btn btn-primary-custom" onclick="printReport()">
+                    <i class="fas fa-print me-2"></i>Print Report
+                </button>
+                <button type="button" class="btn btn-outline-primary" onclick="resetCalculator()">
+                    <i class="fas fa-redo me-2"></i>New Calculation
+                </button>
+                <a href="{% url 'contact' %}" class="btn btn-outline-success">
+                    <i class="fas fa-phone me-2"></i>Get Quote
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="gradient-bg text-white text-center section-padding">
+    <div class="container" data-aos="fade-up">
+        <h2 class="display-5 fw-bold mb-4">Ready to Start Your Project?</h2>
+        <p class="lead mb-4">Get professional installation with a 2-year warranty!</p>
+        <div class="d-flex flex-wrap justify-content-center gap-3">
+            <a href="{% url 'contact' %}" class="btn btn-primary-custom btn-lg pulse-glow">
+                <i class="fas fa-phone me-2"></i>Contact Us
+            </a>
+            <a href="{% url 'myservices' %}" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-eye me-2"></i>View Services
+            </a>
+            <a href="{% url 'portfolio' %}" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-images me-2"></i>Our Work
+            </a>
+        </div>
+    </div>
+</section>
+
+<style>
+.text-purple {
+    color: #8b5cf6;
+}
+
+.grid-container {
+    overflow-x: auto;
+    margin-top: 20px;
+    width: 100%;
+    padding: 10px 0;
+}
+
+.grid {
+    display: inline-block;
+    background: #f8f9fa;
+    position: relative;
+    border: 2px solid #495057;
+    border-radius: 8px;
+    margin: 0 auto;
+    min-width: 200px;
+    min-height: 200px;
+}
+
+.cell {
+    background-color: white;
+    border: 1px solid #6c757d;
+    position: absolute;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    border-radius: 2px;
+    background: linear-gradient(45deg, #f8f9fa 25%, transparent 25%),
+                linear-gradient(-45deg, #f8f9fa 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #f8f9fa 75%),
+                linear-gradient(-45deg, transparent 75%, #f8f9fa 75%);
+    background-size: 8px 8px;
+    background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+}
+
+.cell:hover {
+    transform: scale(1.05);
+    z-index: 2;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    background-color: #e3f2fd;
+}
+
+.cell.full-board {
+    background-color: #e8f5e8;
+    border-color: #28a745;
+}
+
+.cell.partial-board {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+}
+
+@media print {
+    body { background: white !important; color: black !important; }
+    .no-print, .hero-section, .gradient-bg, nav, footer, .whatsapp-float, #backToTop { 
+        display: none !important; 
+    }
+    .print-header { display: block !important; }
+    .card-hover, .glass-card { 
+        background: white !important; 
+        box-shadow: none !important; 
+        border: 1px solid #ddd !important; 
+    }
+    .gradient-text { color: #2c3e50 !important; }
+    .grid { page-break-inside: avoid; }
+    #resultsContainer { display: block !important; }
+}
+
+@media (max-width: 768px) {
+    .grid-container { 
+        padding: 10px;
+        overflow-x: scroll; 
+    }
+    .grid { 
+        min-width: 150px;
+        min-height: 150px;
+    }
+}
+</style>
+
+<script>
+// Calculator Form Handler
+document.getElementById('calculatorForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const lengthInput = document.getElementById('length');
+    const widthInput = document.getElementById('width');
+    const amountInput = document.getElementById('amount');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const errorDiv = document.getElementById('error');
+    const actionButtons = document.getElementById('actionButtons');
+    const costSection = document.getElementById('cost_section');
+
+    // Hide previous results
+    resultsContainer.style.display = 'none';
+    errorDiv.style.display = 'none';
+    actionButtons.style.display = 'none';
+    costSection.style.display = 'none';
+
+    const length = parseFloat(lengthInput.value);
+    const width = parseFloat(widthInput.value);
+    const amount = parseFloat(amountInput.value) || 0;
+
+    // Validation
+    if (isNaN(length) || isNaN(width) || length <= 0 || width <= 0) {
+        errorDiv.style.display = 'block';
+        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => errorDiv.style.display = 'none', 5000);
+        return;
+    }
+
+    // Perform calculations
+    const sq_ft = length * width;
+    const Main_Tee_length = (length / 4) * width / 12;
+    const wall_angle_length = (length + width) * 2 / 10;
+    const four_foot_channel_length = (length / 2) * (width / 4);
+    const two_foot_channel_length = ((length / 2) + 1) * (width / 4);
+    const board_needed = Math.ceil((length * width) / 4);
+    const total_cost = amount > 0 ? sq_ft * amount : null;
+
+    // Update material estimates
+    document.getElementById('sq_ft').textContent = sq_ft.toFixed(2);
+    document.getElementById('main_tee').textContent = Main_Tee_length.toFixed(2);
+    document.getElementById('wall_angle').textContent = wall_angle_length.toFixed(2);
+    document.getElementById('four_foot_channel').textContent = four_foot_channel_length.toFixed(2);
+    document.getElementById('two_foot_channel').textContent = two_foot_channel_length.toFixed(2);
+    document.getElementById('board_needed').textContent = board_needed;
+    
+    if (total_cost) {
+        document.getElementById('total_cost').textContent = 'NPR ' + total_cost.toLocaleString('en-NP');
+        costSection.style.display = 'block';
+    }
+
+    // Generate board layout
+    generateBoardLayout(width, length);
+
+    // Show results
+    resultsContainer.style.display = 'block';
+    actionButtons.style.display = 'block';
+    
+    // Smooth scroll to results
+    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+// Board Layout Generator
+function generateBoardLayout(widthFeet, lengthFeet) {
+    const boardSizeFeet = 2; // Board size: 2ft x 2ft
+    
+    // Calculate responsive scale
+    const containerWidth = document.querySelector('.grid-container').offsetWidth;
+    const maxWidthPx = Math.min(containerWidth - 80, 600);
+    let scale = Math.min(30, maxWidthPx / Math.max(widthFeet, lengthFeet));
+    scale = Math.max(15, scale);
+
+    const fullBoardsWidth = Math.floor(widthFeet / boardSizeFeet);
+    const fullBoardsLength = Math.floor(lengthFeet / boardSizeFeet);
+    const widthRemaining = widthFeet % boardSizeFeet;
+    const lengthRemaining = lengthFeet % boardSizeFeet;
+
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+
+    const totalWidth = (fullBoardsWidth * scale) + (widthRemaining > 0 ? (widthRemaining / boardSizeFeet) * scale : 0);
+    const totalLength = (fullBoardsLength * scale) + (lengthRemaining > 0 ? (lengthRemaining / boardSizeFeet) * scale : 0);
+    
+    grid.style.width = `${totalWidth}px`;
+    grid.style.height = `${totalLength}px`;
+
+    let fullBoardCount = 0;
+    let partialBoardCount = 0;
+
+    // Create cells function
+    function createCell(left, top, width, height, isFullBoard = true) {
+        const cell = document.createElement('div');
+        cell.className = isFullBoard ? 'cell full-board' : 'cell partial-board';
+        cell.style.width = `${width}px`;
+        cell.style.height = `${height}px`;
+        cell.style.left = `${left}px`;
+        cell.style.top = `${top}px`;
+        
+        // Add tooltip
+        const boardType = isFullBoard ? 'Full Board (2×2 ft)' : 'Partial Board';
+        cell.title = boardType;
+        
+        grid.appendChild(cell);
+    }
+
+    // Draw full boards
+    for (let row = 0; row < fullBoardsLength; row++) {
+        for (let col = 0; col < fullBoardsWidth; col++) {
+            createCell(col * scale, row * scale, scale, scale, true);
+            fullBoardCount++;
+        }
+
+        // Add partial width boards
+        if (widthRemaining > 0) {
+            createCell(fullBoardsWidth * scale, row * scale, (widthRemaining / boardSizeFeet) * scale, scale, false);
+            partialBoardCount++;
+        }
+    }
+
+    // Add partial length boards
+    if (lengthRemaining > 0) {
+        for (let col = 0; col < fullBoardsWidth; col++) {
+            createCell(col * scale, fullBoardsLength * scale, scale, (lengthRemaining / boardSizeFeet) * scale, false);
+            partialBoardCount++;
+        }
+
+        // Corner partial board
+        if (widthRemaining > 0) {
+            createCell(
+                fullBoardsWidth * scale,
+                fullBoardsLength * scale,
+                (widthRemaining / boardSizeFeet) * scale,
+                (lengthRemaining / boardSizeFeet) * scale,
+                false
+            );
+            partialBoardCount++;
+        }
+    }
+
+    // Update board summary
+    const totalBoards = fullBoardCount + partialBoardCount;
+    document.getElementById('room_size').textContent = `${widthFeet.toFixed(1)} × ${lengthFeet.toFixed(1)} ft`;
+    document.getElementById('total_boards').textContent = totalBoards;
+    document.getElementById('full_boards').textContent = fullBoardCount;
+    document.getElementById('partial_boards').textContent = partialBoardCount;
+}
+
+// Print function
+function printReport() {
+    document.getElementById('printDate').textContent = new Date().toLocaleDateString('en-NP');
+    window.print();
+}
+
+// Reset calculator
+function resetCalculator() {
+    document.getElementById('calculatorForm').reset();
+    document.getElementById('resultsContainer').style.display = 'none';
+    document.getElementById('actionButtons').style.display = 'none';
+    document.getElementById('error').style.display = 'none';
+    
+    // Smooth scroll to top
+    document.querySelector('.hero-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Handle window resize for responsive grid
+window.addEventListener('resize', function() {
+    const widthInput = document.getElementById('width').value;
+    const lengthInput = document.getElementById('length').value;
+    
+    if (widthInput && lengthInput && document.getElementById('resultsContainer').style.display !== 'none') {
+        generateBoardLayout(parseFloat(widthInput), parseFloat(lengthInput));
+    }
+});
+</script>
+{% endblock %}

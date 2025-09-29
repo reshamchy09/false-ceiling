@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="mb-4 text-center">Estimate Calculator</h2>
+
+    <form id="estimateForm" class="card p-4 shadow-sm rounded-4">
+        <div id="serviceContainer">
+            <!-- Service Row Template -->
+            <div class="service-row border p-3 rounded mb-3">
+                <div class="row g-3">
+                    <!-- Category -->
+                    <div class="col-md-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-select category-select" onchange="filterServices(this)" required>
+                            <option value="" disabled selected>-- Select Category --</option>
+                            {% for cat, services_in_cat in categories.items %}
+                                <option value="{{ cat }}">{{ cat|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Service -->
+                    <div class="col-md-3">
+                        <label class="form-label">Service</label>
+                        <select class="form-select service-select" required>
+                            <option value="" disabled selected>-- Select Service --</option>
+                            {% for cat, services_in_cat in categories.items %}
+                                {% for service in services_in_cat %}
+                                    <option value="{{ service.price_per_sqft }}" data-category="{{ cat }}">
+                                        {{ service.title }} (Rs. {{ service.price_per_sqft }} / sqft)
+                                    </option>
+                                {% endfor %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Width -->
+                    <div class="col-md-2">
+                        <label class="form-label">Width (ft)</label>
+                        <input type="number" class="form-control width-input" min="1" placeholder="e.g. 10" required>
+                    </div>
+
+                    <!-- Length -->
+                    <div class="col-md-2">
+                        <label class="form-label">Length (ft)</label>
+                        <input type="number" class="form-control length-input" min="1" placeholder="e.g. 20" required>
+                    </div>
+
+                    <!-- Remove button -->
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-danger w-100 remove-row" onclick="removeRow(this)">Remove</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Location -->
+        <div class="mb-3">
+            <label for="location" class="form-label">Choose Location</label>
+            <select id="location" class="form-select" required>
+                <option value="" disabled selected>-- Select Location --</option>
+                {% for loc in locations %}
+                    <option value="{{ loc.additional_price }}">{{ loc.location }} (+Rs. {{ loc.additional_price }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="d-flex justify-content-between mb-3">
+            <button type="button" class="btn btn-secondary" onclick="addServiceRow()">+ Add More Service</button>
+            <button type="button" class="btn btn-primary" onclick="calculateEstimate()">Calculate Estimate</button>
+        </div>
+    </form>
+
+    <div id="result" class="alert alert-info mt-4 text-center fw-bold" style="display: none;"></div>
+
+    <p class="mt-4 text-center text-muted fst-italic">
+      💡 For discounts and better offers, please contact the owner directly.
+    </p>
+
+     <p class="mt-4 text-center text-muted fst-italic">
+      ⚠️ This service is unavailable in your location. Please contact the owner for more information
+    </p>
+</div>
+
+<script>
+function filterServices(categorySelect) {
+    let category = categorySelect.value;
+    let serviceSelect = categorySelect.closest(".service-row").querySelector(".service-select");
+
+    Array.from(serviceSelect.options).forEach(opt => {
+        if (opt.value === "") return; // keep placeholder
+        opt.style.display = (opt.dataset.category === category) ? "block" : "none";
+    });
+    serviceSelect.selectedIndex = 0;
+}
+
+function addServiceRow() {
+    let container = document.getElementById("serviceContainer");
+    let newRow = container.children[0].cloneNode(true);
+
+    // reset values
+    newRow.querySelector(".category-select").selectedIndex = 0;
+    newRow.querySelector(".service-select").selectedIndex = 0;
+    newRow.querySelector(".width-input").value = "";
+    newRow.querySelector(".length-input").value = "";
+
+    container.appendChild(newRow);
+}
+
+function removeRow(btn) {
+    let container = document.getElementById("serviceContainer");
+    if (container.children.length > 1) {
+        btn.closest(".service-row").remove();
+    } else {
+        alert("At least one service row is required.");
+    }
+}
+
+function calculateEstimate() {
+    let locationAddition = parseFloat(document.getElementById("location").value) || 0;
+    let rows = document.querySelectorAll(".service-row");
+    let total = 0;
+
+    rows.forEach(row => {
+        let servicePrice = parseFloat(row.querySelector(".service-select").value);
+        let width = parseFloat(row.querySelector(".width-input").value);
+        let length = parseFloat(row.querySelector(".length-input").value);
+
+        if (!isNaN(servicePrice) && !isNaN(width) && !isNaN(length)) {
+            let area = width * length;
+            total += servicePrice * area;
+        }
+    });
+
+    if (total > 0) {
+        let estimate = total + locationAddition;
+
+        // Add commas
+        let formattedEstimate = estimate.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+
+        document.getElementById("result").innerHTML = "Estimated Price Npr: Rs. " + formattedEstimate;
+        document.getElementById("result").style.display = "block";
+    } else {
+        alert("Please fill all fields correctly.");
+    }
+}
+</script>
+{% endblock %}

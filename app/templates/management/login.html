@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Signup/Login</title>
+</head>
+<body>
+  <h2>Signup</h2>
+  <input type="text" id="signupPhone" placeholder="Phone"><br>
+  <input type="email" id="signupEmail" placeholder="Email"><br>
+  <input type="password" id="signupPassword" placeholder="Password"><br>
+  <input type="text" id="signupUsername" placeholder="Username"><br>
+  <select id="signupGender">
+    <option value="">Select Gender</option>
+    <option value="Male">Male</option>
+    <option value="Female">Female</option>
+  </select><br>
+  <button onclick="signup()">Signup</button>
+
+  <h2>Login</h2>
+  <input type="email" id="loginEmail" placeholder="Email"><br>
+  <input type="password" id="loginPassword" placeholder="Password"><br>
+  <button onclick="login()">Login</button>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script>
+    
+        // Firebase Config
+          const firebaseConfig = {
+    apiKey: "AIzaSyCmJl82VktcyAZQYsMc_0Rw-2MxRNPBVUw",
+  authDomain: "shop-mgt.firebaseapp.com",
+  projectId: "shop-mgt",
+  storageBucket: "shop-mgt.firebasestorage.app",
+  messagingSenderId: "577237698646",
+  appId: "1:577237698646:web:185d0aeb482eb7b70713f7",
+  measurementId: "G-D5YTD5M9HB"
+    };
+
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    function signup() {
+      const phone = document.getElementById("signupPhone").value;
+      const email = document.getElementById("signupEmail").value;
+      const password = document.getElementById("signupPassword").value;
+      const username = document.getElementById("signupUsername").value;
+      const gender = document.getElementById("signupGender").value;
+
+      if (!phone || !email || !password || !username || !gender) {
+        alert("All fields are required!");
+        return;
+      }
+
+      auth.createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          const userId = userCredential.user.uid;
+          db.ref("users/" + userId).set({
+            phone: phone,
+            email: email,
+            username: username,
+            gender: gender
+          }).then(() => {
+            alert("Signup successful!");
+          });
+        })
+        .catch((error) => {
+          alert(error.message);
+        });
+    }
+
+    function login() {
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+
+      if (!email || !password) {
+        alert("Email and Password are required!");
+        return;
+      }
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          alert("Login successful!");
+        })
+        .catch((error) => {
+          alert(error.message);
+        });
+    }
+  </script>
+</body>
+</html>

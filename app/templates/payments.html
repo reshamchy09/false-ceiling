@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Track & User Statements</title>
+    <!-- Firebase SDK (Using v9 compat for consistency with employees.html) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* Base Styles (Mostly unchanged from provided file) */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-size: clamp(14px, 2.5vw, 16px);
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: clamp(1rem, 3vw, 2rem);
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-bottom: 1rem;
+        }
+        .sidebar-header h2 {
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .nav-menu {
+            list-style: none;
+            padding: 0 clamp(0.5rem, 2vw, 1rem);
+        }
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: clamp(0.8rem, 2vw, 1rem) clamp(1rem, 3vw, 1.5rem);
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            touch-action: manipulation;
+        }
+        .nav-link:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+        .nav-link:hover:before {
+            left: 100%;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(8px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+        .nav-icon {
+            width: clamp(16px, 2.5vw, 20px);
+            height: clamp(16px, 2.5vw, 20px);
+            margin-right: clamp(8px, 2vw, 12px);
+            opacity: 0.3;
+        }
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: clamp(1rem, 3vw, 2rem);
+            transition: margin-left 0.3s ease;
+        }
+        .page {
+            animation: pageFadeIn 1s ease-in-out;
+        }
+        @keyframes pageFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .page-header {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: clamp(1rem, 3vw, 2rem);
+            border-radius: 20px;
+            margin-bottom: clamp(1rem, 3vw, 2rem);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: clamp(0.5rem, 2vw, 1rem);
+        }
+        .page-title {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            color: transparent;
+            margin: 0;
+        }
+        .page-subtitle {
+            color: #6b7280;
+            font-size: clamp(0.8rem, 2.5vw, 1rem);
+            margin: 0;
+        }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(clamp(200px, 25vw, 250px), 1fr));
+            gap: clamp(1rem, 2vw, 1.5rem);
+            margin-bottom: clamp(1rem, 2vw, 2rem);
+        }
+        .card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: clamp(1rem, 2vw, 1.5rem);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        .card:hover:before {
+            transform: scaleX(1);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: clamp(0.5rem, 1.5vw, 1rem);
+        }
+        .card-icon {
+            width: clamp(36px, 4vw, 40px);
+            height: clamp(36px, 4vw, 40px);
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: clamp(0.5rem, 1.5vw, 1rem);
+            color: white;
+            font-size: clamp(16px, 2.5vw, 20px);
+        }
+        .card-title {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .card-value {
+            font-size: clamp(1.3rem, 3vw, 1.8rem);
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 0.3rem;
+        }
+        .card-description {
+            color: #6b7280;
+            font-size: clamp(0.75rem, 1.8vw, 0.85rem);
+        }
+        .btn {
+            padding: clamp(8px, 2vw, 12px) clamp(16px, 3vw, 24px);
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(6px, 1.5vw, 8px);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            font-size: clamp(0.85rem, 2vw, 0.95rem);
+            touch-action: manipulation;
+            flex-shrink: 0; /* Prevent buttons from shrinking too much */
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102,126,234,0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102,126,234,0.4);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.9);
+            color: #667eea;
+            border: 1px solid #667eea;
+        }
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            border: none;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-warning {
+             background: #f59e0b;
+             color: white;
+             border: none;
+        }
+        .btn-warning:hover {
+             background: #d97706;
+        }
+        .table-container {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: clamp(1rem, 3vw, 2rem);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            overflow-x: auto;
+            margin-bottom: clamp(1rem, 2vw, 2rem);
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+        }
+        .table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: clamp(0.7rem, 1.5vw, 0.9rem);
+            text-align: left;
+            font-weight: bold;
+        }
+        .table td {
+            padding: clamp(0.7rem, 1.5vw, 0.9rem);
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .table tbody tr:hover {
+            background-color: rgba(102,126,234,0.05);
+        }
+        .status-badge {
+            padding: clamp(3px, 1vw, 5px) clamp(6px, 1.5vw, 10px);
+            border-radius: 20px;
+            font-size: clamp(0.65rem, 1.5vw, 0.75rem);
+            font-weight: bold;
+            text-transform: uppercase;
+            display: inline-block;
+            text-align: center;
+            min-width: clamp(50px, 8vw, 70px);
+        }
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .status-leave {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-present {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-absent {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: clamp(10px, 2vw, 20px);
+            left: clamp(10px, 2vw, 20px);
+            z-index: 1001;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: clamp(8px, 2vw, 10px) clamp(12px, 2.5vw, 15px);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: clamp(1rem, 3vw, 1.2rem);
+            touch-action: manipulation;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            padding: clamp(1rem, 3vw, 2rem);
+        }
+        .modal-content {
+            background: white;
+            padding: clamp(1rem, 3vw, 2rem);
+            border-radius: 12px;
+            width: 90%;
+            max-width: clamp(300px, 80vw, 600px); /* Slightly wider for forms */
+            position: relative;
+            animation: modalFadeIn 0.3s ease-out;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .modal-content h2 {
+            margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
+            color: #1f2937;
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+        }
+        .modal-content form {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(0.8rem, 2vw, 1rem);
+        }
+        .form-group {
+            margin-bottom: clamp(0.8rem, 2vw, 1rem);
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: clamp(0.3rem, 1vw, 0.5rem);
+            font-weight: 600;
+            color: #4b5563;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+        }
+        .form-control {
+            width: 100%;
+            padding: clamp(0.6rem, 2vw, 0.8rem) clamp(0.8rem, 2.5vw, 1rem);
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            transition: border-color 0.3s ease;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+        /* Style for Select Dropdown */
+        .form-control.select {
+            appearance: none;
+            background-image: url("image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M7 10l3 3 3-3'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        .salary-input, .deduction-input {
+            position: relative;
+        }
+        .salary-input span, .deduction-input span {
+            position: absolute;
+            left: clamp(8px, 2vw, 12px);
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            color: #4b5563;
+        }
+        .salary-input input, .deduction-input input {
+            padding-left: clamp(24px, 5vw, 30px) !important;
+        }
+        .btn-container {
+            display: flex;
+            gap: clamp(0.5rem, 2vw, 1rem);
+            justify-content: flex-end;
+            margin-top: clamp(0.8rem, 2vw, 1rem);
+        }
+        .close-modal {
+            position: absolute;
+            top: clamp(0.5rem, 2vw, 1rem);
+            right: clamp(0.5rem, 2vw, 1rem);
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            cursor: pointer;
+            color: #6b7280;
+            background: none;
+            border: none;
+            width: clamp(28px, 5vw, 36px);
+            height: clamp(28px, 5vw, 36px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+        .close-modal:hover {
+            background-color: #f3f4f6;
+        }
+        .controls {
+             display: flex;
+             flex-wrap: wrap;
+             gap: clamp(0.8rem, 2vw, 1rem);
+             align-items: center;
+             margin-bottom: clamp(1rem, 2vw, 1.5rem);
+             background: rgba(255,255,255,0.9);
+             padding: clamp(0.8rem, 2vw, 1rem);
+             border-radius: 12px;
+             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: clamp(150px, 30vw, 200px);
+        }
+        .control-group label {
+            font-weight: 600;
+            margin-bottom: clamp(0.3rem, 1vw, 0.5rem);
+            color: #4b5563;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+        }
+        .search-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: clamp(1rem, 2.5vw, 1.5rem);
+            flex-wrap: wrap;
+            gap: clamp(0.5rem, 2vw, 1rem);
+        }
+        .search-input {
+            padding: clamp(0.6rem, 2vw, 0.8rem) clamp(0.8rem, 2.5vw, 1rem);
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            width: 100%;
+            max-width: clamp(200px, 40vw, 300px);
+            transition: all 0.3s ease;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+        .action-buttons {
+            display: flex;
+            gap: clamp(0.3rem, 1.5vw, 0.5rem);
+            flex-wrap: wrap;
+        }
+        .btn-sm {
+            padding: clamp(5px, 1.2vw, 7px) clamp(7px, 1.8vw, 10px);
+            font-size: clamp(0.7rem, 1.8vw, 0.8rem);
+        }
+        .salary-badge, .deduction-badge, .balance-badge {
+            padding: clamp(3px, 1vw, 5px) clamp(6px, 1.5vw, 10px);
+            border-radius: 6px;
+            font-size: clamp(0.7rem, 1.8vw, 0.8rem);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: clamp(2px, 0.8vw, 3px);
+        }
+        .salary-badge {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .deduction-badge {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .balance-badge {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .balance-badge.negative {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .npr-symbol {
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+        }
+        .text-sm {
+            font-size: clamp(0.7rem, 1.8vw, 0.8rem);
+        }
+        .text-gray-500 {
+            color: #6b7280;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .toast {
+            position: fixed;
+            bottom: clamp(10px, 2vw, 20px);
+            right: clamp(10px, 2vw, 20px);
+            background: #1f2937;
+            color: white;
+            padding: clamp(0.8rem, 2vw, 1rem) clamp(1rem, 2.5vw, 1.5rem);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1001;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+        }
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .toast-success {
+            background: #065f46;
+        }
+        .toast-error {
+            background: #991b1b;
+        }
+        .toast-info {
+            background: #1e40af;
+        }
+        .loading {
+            display: inline-block;
+            width: clamp(16px, 2.5vw, 20px);
+            height: clamp(16px, 2.5vw, 20px);
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.9;
+            }
+        }
+        .card-animated {
+            animation: pulse 2s infinite;
+        }
+        .section-title {
+             font-size: clamp(1.1rem, 3vw, 1.4rem);
+             margin-top: clamp(1rem, 2vw, 2rem);
+             margin-bottom: clamp(0.5rem, 1.5vw, 1rem);
+             color: #374151;
+             padding-bottom: clamp(0.3rem, 1vw, 0.5rem);
+             border-bottom: 2px solid #e5e7eb;
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+        }
+        /* Statement Styles */
+        .statement-header {
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+             margin-bottom: clamp(1rem, 2vw, 1.5rem);
+             flex-wrap: wrap;
+             gap: clamp(0.5rem, 2vw, 1rem);
+        }
+        .statement-title {
+             font-size: clamp(1.2rem, 3vw, 1.7rem);
+             font-weight: bold;
+             color: #1f2937;
+        }
+        .statement-subtitle {
+             color: #6b7280;
+             font-size: clamp(0.85rem, 2vw, 0.95rem);
+        }
+        .statement-info {
+             margin-bottom: clamp(1rem, 2vw, 1.5rem);
+             padding: clamp(0.8rem, 2vw, 1rem);
+             background: #f9fafb;
+             border-radius: 10px;
+             border: 1px solid #e5e7eb;
+        }
+        .statement-info-item {
+             margin-bottom: clamp(0.3rem, 1vw, 0.5rem);
+             font-size: clamp(0.85rem, 2vw, 0.95rem);
+        }
+        .statement-info-item strong {
+             color: #374151;
+        }
+        .no-data {
+            text-align: center;
+            padding: clamp(2rem, 4vw, 3rem);
+            color: #9ca3af;
+            font-style: italic;
+        }
+        .account-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: clamp(0.5rem, 1.2vw, 0.7rem) 0;
+            border-bottom: 1px solid #eee;
+        }
+        .account-entry:last-child {
+            border-bottom: none;
+        }
+        .account-date {
+            font-weight: 500;
+            color: #4b5563;
+            min-width: 80px;
+        }
+        .account-details {
+            flex: 1;
+            margin: 0 clamp(0.6rem, 1.5vw, 1rem);
+            color: #6b7280;
+            font-size: clamp(0.75rem, 1.9vw, 0.85rem);
+        }
+        .account-details div {
+            margin-bottom: clamp(0.2rem, 0.5vw, 0.3rem);
+        }
+        .account-details strong {
+            color: #374151;
+        }
+        .account-type {
+             font-weight: 600;
+             padding: clamp(2px, 0.5vw, 4px) clamp(6px, 1.5vw, 8px);
+             border-radius: 4px;
+             font-size: clamp(0.65rem, 1.7vw, 0.7rem);
+        }
+        .account-type.credit {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .account-type.debit {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .account-amount {
+            font-weight: 600;
+            min-width: 80px;
+            text-align: right;
+        }
+        .account-amount.credit {
+            color: #059669;
+        }
+        .account-amount.debit {
+            color: #dc2626;
+        }
+        .statement-footer {
+             margin-top: clamp(1rem, 2vw, 2rem);
+             padding-top: clamp(0.8rem, 2vw, 1rem);
+             border-top: 2px solid #e5e7eb;
+             display: flex;
+             justify-content: space-between;
+             font-weight: bold;
+             font-size: clamp(0.95rem, 2.4vw, 1.05rem);
+        }
+        .statement-total-label {
+             color: #374151;
+        }
+        .statement-total-amount {
+             color: #667eea;
+        }
+        .statement-total-amount.negative {
+             color: #ef4444;
+        }
+        /* Large Tablets and Below (max-width: 1024px) */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                padding: clamp(0.8rem, 2.5vw, 1rem);
+            }
+            .sidebar {
+                transform: translateX(-100%);
+                width: clamp(200px, 60vw, 260px);
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .sidebar-toggle {
+                display: block;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+             .page-header {
+                 flex-direction: column;
+                 align-items: flex-start;
+             }
+             .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+             .cards-grid {
+                 grid-template-columns: 1fr;
+             }
+             .btn-container {
+                flex-direction: column;
+                gap: clamp(0.5rem, 2vw, 0.8rem);
+            }
+            .btn {
+                width: 100%;
+                padding: clamp(10px, 3vw, 14px) clamp(16px, 4vw, 20px);
+            }
+            .action-buttons {
+                flex-direction: column;
+                gap: clamp(0.5rem, 2vw, 0.8rem);
+            }
+            .table th, .table td {
+                padding: clamp(0.5rem, 1.5vw, 0.8rem);
+            }
+            .table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            .table thead {
+                display: none;
+            }
+            .table tbody tr {
+                display: block;
+                margin-bottom: clamp(0.8rem, 2vw, 1rem);
+                border-bottom: 2px solid #e5e7eb;
+            }
+            .table tbody td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: clamp(0.5rem, 1.5vw, 0.8rem);
+                border-bottom: none;
+                position: relative;
+            }
+            .table tbody td:before {
+                content: attr(data-label);
+                font-weight: bold;
+                color: #4b5563;
+                flex: 0 0 40%;
+                font-size: clamp(0.7rem, 1.9vw, 0.8rem);
+            }
+            .table tbody td:not(:last-child) {
+                border-bottom: 1px solid #e5e7eb;
+            }
+            .modal-content {
+                padding: clamp(0.8rem, 2.5vw, 1.5rem);
+                max-height: 85vh;
+            }
+            .modal {
+                padding: clamp(0.5rem, 2vw, 1rem);
+            }
+             .account-entry {
+                 flex-direction: column;
+                 align-items: flex-start;
+                 gap: clamp(0.3rem, 1vw, 0.5rem);
+             }
+             .account-date, .account-amount {
+                 text-align: left;
+                 min-width: unset;
+             }
+        }
+        /* Mobile Devices (max-width: 768px) */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+             .statement-info-item {
+                 font-size: clamp(0.75rem, 2vw, 0.85rem);
+             }
+             .account-details {
+                 font-size: clamp(0.7rem, 1.8vw, 0.8rem);
+             }
+        }
+        /* Small Mobile Devices (max-width: 480px) */
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100%;
+            }
+            .page-title {
+                font-size: clamp(1.1rem, 4vw, 1.6rem);
+            }
+            .card {
+                padding: clamp(0.7rem, 2.5vw, 1rem);
+            }
+            .btn-sm {
+                width: 100%;
+            }
+             .statement-title {
+                 font-size: clamp(1rem, 3vw, 1.5rem);
+             }
+        }
+        .transaction-filter {
+             margin-bottom: clamp(0.8rem, 2vw, 1rem);
+             display: flex;
+             flex-wrap: wrap;
+             gap: clamp(0.5rem, 1.5vw, 0.8rem);
+             align-items: center;
+        }
+        .transaction-filter label {
+             font-weight: 600;
+             color: #4b5563;
+             font-size: clamp(0.8rem, 2vw, 0.9rem);
+        }
+        .pdf-options {
+             display: flex;
+             flex-wrap: wrap;
+             gap: clamp(0.5rem, 1.5vw, 1rem);
+             align-items: center;
+             margin-top: clamp(0.8rem, 2vw, 1rem);
+             padding-top: clamp(0.8rem, 2vw, 1rem);
+             border-top: 1px solid #e5e7eb;
+        }
+        .pdf-options label {
+             font-weight: 600;
+             color: #4b5563;
+             font-size: clamp(0.8rem, 2vw, 0.9rem);
+        }
+        .pdf-options select, .pdf-options button {
+             flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+    <button class="sidebar-toggle" aria-label="Toggle Sidebar">☰</button>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Business Pro</h2>
+            </div>
+             <ul class="nav-menu">
+        <li class="nav-item">
+            <a href="{% url 'index' %}" class="nav-link" aria-label="Home">
+                <span class="nav-icon">🏠</span>
+                Home
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'admin_dashboard' %}" class="nav-link" aria-label="Dashboard">
+                <span class="nav-icon">📊</span>
+                Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'inventory' %}" class="nav-link" aria-label="Inventory">
+                <span class="nav-icon">📦</span>
+                Inventory
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'sales' %}" class="nav-link" aria-label="Sales">
+                <span class="nav-icon">💰</span>
+                Sales
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'customers' %}" class="nav-link" aria-label="Customers">
+                <span class="nav-icon">👥</span>
+                Customers
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'employees' %}" class="nav-link" aria-label="Employees">
+                <span class="nav-icon">👤</span>
+                Employees
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'invoice' %}" class="nav-link" aria-label="Invoice and Billing">
+                <span class="nav-icon">📄</span>
+                Invoice & Billing
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'purchase' %}" class="nav-link" aria-label="Purchase">
+                <span class="nav-icon">🛒</span>
+                Purchase
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'expense' %}" class="nav-link" aria-label="Expense">
+                <span class="nav-icon">💸</span>
+                Expense
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'tasks' %}" class="nav-link" aria-label="Task Assignment">
+                <span class="nav-icon">✅</span>
+                Task Assignment
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'payments' %}" class="nav-link" aria-label="Payment Track">
+                <span class="nav-icon">💳</span>
+                Payment Track
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'website' %}" class="nav-link" aria-label="Website Management">
+                <span class="nav-icon">🌐</span>
+                Website Management
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'ledger' %}" class="nav-link" aria-label="Ledger">
+                <span class="nav-icon">📚</span>
+                Ledger
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'subscription' %}" class="nav-link" aria-label="Subscription">
+                <span class="nav-icon">🧾</span>
+                Subscription
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'stockbook' %}" class="nav-link" aria-label="Stock Book">
+                <span class="nav-icon">📘</span>
+                Stock Book
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'attendance' %}" class="nav-link" aria-label="Attendance">
+                <span class="nav-icon">🕒</span>
+                Attendance
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'settings' %}" class="nav-link" aria-label="Settings">
+                <span class="nav-icon">⚙️</span>
+                Settings
+            </a>
+        </li>
+    </ul>
+        </div>
+        <div class="main-content">
+            <div class="page">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Payment Track & User Statements</h1>
+                        <p class="page-subtitle">Monitor payments, user balances, and generate statements</p>
+                    </div>
+                </div>
+
+                <!-- Controls for Filtering Users -->
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="userFilter">Filter by User</label>
+                        <select class="form-control select" id="userFilter">
+                            <option value="">All Users</option>
+                            <!-- Options populated by JS -->
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="loadUserDataBtn">Load User Data</button>
+                    <button class="btn btn-secondary" id="generateStatementBtn">Generate Statement</button>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">👤</div>
+                            <div class="card-title">Selected User</div>
+                        </div>
+                        <div class="card-value" id="selectedUserName">None</div>
+                        <div class="card-description" id="selectedUserPhone">-</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">💼</div>
+                            <div class="card-title">Role & Status</div>
+                        </div>
+                        <div class="card-value" id="selectedUserRole">-</div>
+                        <div class="card-description"><span class="status-badge" id="selectedUserStatusBadge">-</span></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">💰</div>
+                            <div class="card-title">Daily Wage</div>
+                        </div>
+                        <div class="card-value salary-badge">
+                            <span class="npr-symbol">रु</span> <span id="selectedUserDailyWage">0</span>
+                        </div>
+                        <div class="card-description">Per Day</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">⚖️</div>
+                            <div class="card-title">Total Balance</div>
+                        </div>
+                        <div class="card-value balance-badge" id="selectedUserBalance">
+                            <span class="npr-symbol">रु</span> 0
+                        </div>
+                        <div class="card-description">Wages - Deductions</div>
+                    </div>
+                </div>
+
+                <!-- Main Table Container (Initially shows users) -->
+                <div class="table-container" id="mainTableContainer">
+                    <h3 class="section-title">Users</h3>
+                    <div class="search-container">
+                        <input type="text" class="search-input" id="userSearchInput" placeholder="Search users..." aria-label="Search users">
+                    </div>
+                    <table class="table" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <!-- Add more columns for other user fields if needed -->
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr><td colspan="3" class="text-center">Loading users...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Deduct Balance Modal -->
+                <div class="modal" id="deductBalanceModal">
+                    <div class="modal-content">
+                        <span class="close-modal" id="closeDeductModal">×</span>
+                        <h2>Deduct User Balance</h2>
+                        <div class="statement-info">
+                            <div class="statement-info-item"><strong>User:</strong> <span id="deductUserName">-</span></div>
+                            <div class="statement-info-item"><strong>Current Balance:</strong> <span class="npr-symbol">रु</span> <span id="deductUserBalance">0</span></div>
+                        </div>
+                        <form id="deductBalanceForm">
+                            <input type="hidden" id="deductUserId">
+                            <div class="form-group">
+                                <label for="deductAmount">Amount (NPR) *</label>
+                                <div class="deduction-input">
+                                    <span class="npr-symbol">रु</span>
+                                    <input type="number" class="form-control" id="deductAmount" placeholder="1000" min="0.01" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="deductCategory">Category *</label>
+                                <select class="form-control select" id="deductCategory" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Expenses">Expenses</option>
+                                    <option value="Bank Deposit">Bank Deposit</option>
+                                    <option value="Advance">Advance</option>
+                                    <option value="Penalty">Penalty</option>
+                                    <!-- Add more categories as needed -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="deductReason">Reason *</label>
+                                <input type="text" class="form-control" id="deductReason" placeholder="e.g., Advance, Penalty" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="deductNote">Note (Optional)</label>
+                                <textarea class="form-control" id="deductNote" placeholder="Additional details..."></textarea>
+                            </div>
+                            <div class="btn-container">
+                                <button type="button" class="btn btn-secondary" id="cancelDeductBtn">Cancel</button>
+                                <button type="submit" class="btn btn-danger" id="confirmDeductBtn">Confirm Deduction</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Statement View Container (Initially hidden) -->
+                <div class="table-container" id="statementContainer" style="display: none;">
+                    <div class="statement-header">
+                        <div>
+                            <h2 class="statement-title" id="statementUserName">User Statement</h2>
+                            <p class="statement-subtitle" id="statementUserDetails">-</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary" id="deductFromStatementBtn">Deduct Balance</button>
+                            <div class="pdf-options">
+                                <label for="pdfDateFilter">Period:</label>
+                                <select class="form-control select" id="pdfDateFilter">
+                                    <option value="all">All Time</option>
+                                    <option value="monthly">This Month</option>
+                                    <option value="weekly">This Week</option>
+                                </select>
+                                <button class="btn btn-secondary" id="downloadPdfBtn">Download PDF</button>
+                            </div>
+                            <button class="btn btn-secondary" id="closeStatementBtn">Close Statement</button>
+                        </div>
+                    </div>
+                    <div class="statement-info">
+                        <div class="statement-info-item"><strong>Daily Wage:</strong> <span class="npr-symbol">रु</span> <span id="statementDailyWage">-</span></div>
+                        <div class="statement-info-item"><strong>Current Balance:</strong> <span class="npr-symbol">रु</span> <span id="statementCurrentBalance">0</span></div>
+                    </div>
+                    <h3 class="section-title">Statement Details</h3>
+                    <div id="statementDetailsList">
+                        <div class="no-data">Select a user and click 'Generate Statement'.</div>
+                    </div>
+                    <div class="statement-footer">
+                        <span class="statement-total-label">Final Balance:</span>
+                        <span class="statement-total-amount" id="statementFinalBalance">रु 0</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script>
+        // Firebase configuration (REPLACE WITH YOUR ACTUAL CONFIG)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCmJl82VktcyAZQYsMc_0Rw-2MxRNPBVUw", // Example, replace
+            authDomain: "shop-mgt.firebaseapp.com",
+            databaseURL: "https://shop-mgt-default-rtdb.firebaseio.com",
+            projectId: "shop-mgt",
+            storageBucket: "shop-mgt.appspot.com",
+            messagingSenderId: "577237698646",
+            appId: "1:577237698646:web:185d0aeb482eb7b70713f7",
+            measurementId: "G-D5YTD5M9HB"
+        };
+
+        // Initialize Firebase using v9 compat
+        let database;
+        try {
+            const app = firebase.initializeApp(firebaseConfig);
+            database = firebase.database(app);
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            showToast('Failed to connect to database. Please check your configuration.', 'error');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.querySelector('.sidebar-toggle');
+            const userFilter = document.getElementById('userFilter');
+            const loadUserDataBtn = document.getElementById('loadUserDataBtn');
+            const generateStatementBtn = document.getElementById('generateStatementBtn');
+            const userSearchInput = document.getElementById('userSearchInput');
+            const usersTableBody = document.getElementById('usersTableBody');
+            const mainTableContainer = document.getElementById('mainTableContainer');
+            const statementContainer = document.getElementById('statementContainer');
+
+            // Card Elements
+            const selectedUserName = document.getElementById('selectedUserName');
+            const selectedUserPhone = document.getElementById('selectedUserPhone');
+            const selectedUserRole = document.getElementById('selectedUserRole');
+            const selectedUserStatusBadge = document.getElementById('selectedUserStatusBadge');
+            const selectedUserDailyWage = document.getElementById('selectedUserDailyWage');
+            const selectedUserBalance = document.getElementById('selectedUserBalance');
+
+            // Modal Elements - Deduct Balance
+            const deductBalanceModal = document.getElementById('deductBalanceModal');
+            const closeDeductModal = document.getElementById('closeDeductModal');
+            const cancelDeductBtn = document.getElementById('cancelDeductBtn');
+            const deductBalanceForm = document.getElementById('deductBalanceForm');
+            const deductUserName = document.getElementById('deductUserName');
+            const deductUserBalance = document.getElementById('deductUserBalance');
+            const deductUserId = document.getElementById('deductUserId');
+            const deductAmount = document.getElementById('deductAmount');
+            const deductCategory = document.getElementById('deductCategory');
+            const deductReason = document.getElementById('deductReason');
+            const deductNote = document.getElementById('deductNote');
+
+            // Statement Elements
+            const statementUserName = document.getElementById('statementUserName');
+            const statementUserDetails = document.getElementById('statementUserDetails');
+            const statementDailyWage = document.getElementById('statementDailyWage');
+            const statementCurrentBalance = document.getElementById('statementCurrentBalance');
+            const statementDetailsList = document.getElementById('statementDetailsList');
+            const statementFinalBalance = document.getElementById('statementFinalBalance');
+            const closeStatementBtn = document.getElementById('closeStatementBtn');
+            const deductFromStatementBtn = document.getElementById('deductFromStatementBtn');
+            const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+            const pdfDateFilter = document.getElementById('pdfDateFilter');
+
+            // State
+            let allUsers = {}; // Key: userId, Value: full user data object
+            let currentUserData = null; // Holds data for the currently selected/viewed user
+
+            // Sidebar toggle
+            toggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+
+            // --- Load Users from /users/{userId} ---
+            function loadUsers() {
+                if (!database) {
+                    usersTableBody.innerHTML = '<tr><td colspan="3" class="text-center">Database not initialized.</td></tr>';
+                    return;
+                }
+                usersTableBody.innerHTML = '<tr><td colspan="3" class="text-center">Loading users...</td></tr>';
+                userFilter.innerHTML = '<option value="">All Users</option>'; // Reset filter
+
+                // Read from /users
+                database.ref('users').once('value')
+                    .then(snapshot => {
+                        allUsers = {}; // Reset local cache
+                        usersTableBody.innerHTML = '';
+                        userFilter.innerHTML = '<option value="">All Users</option>'; // Reset filter
+
+                        if (!snapshot.exists()) {
+                             usersTableBody.innerHTML = '<tr><td colspan="3" class="text-center">No users found in /users.</td></tr>';
+                             return;
+                        }
+
+                        snapshot.forEach(userSnapshot => {
+                            const userId = userSnapshot.key;
+                            const userData = userSnapshot.val();
+
+                            // Store user data in local cache
+                            allUsers[userId] = { id: userId, ...userData };
+
+                            // Populate table row
+                            const row = document.createElement('tr');
+                            // Assuming fields 'name' and 'phone' exist directly under /users/{userId}
+                            row.innerHTML = `
+                                <td data-label="Name"><strong>${userData.name || 'N/A'}</strong></td>
+                                <td data-label="Phone">${userData.phone || 'N/A'}</td>
+                                <!-- Add more <td> elements for other fields if needed -->
+                                <td data-label="Actions">
+                                    <button class="btn btn-secondary btn-sm select-user-btn" data-user-id="${userId}" aria-label="Select ${userData.name || 'User'}">
+                                        Select
+                                    </button>
+                                </td>
+                            `;
+                            usersTableBody.appendChild(row);
+
+                            // Populate filter dropdown
+                            const option = document.createElement('option');
+                            option.value = userId;
+                            option.textContent = userData.name || `User (${userId})`;
+                            userFilter.appendChild(option);
+                        });
+
+                        // Add event listeners to select buttons (using event delegation)
+                        usersTableBody.addEventListener('click', function(e) {
+                             if (e.target.classList.contains('select-user-btn')) {
+                                 const userId = e.target.getAttribute('data-user-id');
+                                 selectUser(userId);
+                             }
+                        });
+
+                        // Search functionality for users table
+                        userSearchInput.addEventListener('input', function() {
+                            const searchTerm = this.value.toLowerCase();
+                            const rows = usersTableBody.querySelectorAll('tr');
+                            rows.forEach(row => {
+                                const text = row.textContent.toLowerCase();
+                                row.style.display = text.includes(searchTerm) ? '' : 'none';
+                            });
+                        });
+
+                        showToast('Users loaded successfully.', 'success');
+                    })
+                    .catch(error => {
+                        console.error("Error loading users:", error);
+                        usersTableBody.innerHTML = `<tr><td colspan="3" class="text-center">Error loading users: ${error.message}</td></tr>`;
+                        showToast('Failed to load user list.', 'error');
+                    });
+            }
+
+            // --- Select User (Update Cards) ---
+            function selectUser(userId) {
+                const user = allUsers[userId];
+                if (!user) {
+                    showToast('User not found in local cache.', 'error');
+                    // Optionally, reload users or fetch specific user from DB
+                    return;
+                }
+                currentUserData = user;
+                updateUserInfoCards(user);
+                showToast(`User ${user.name || userId} selected.`, 'info');
+            }
+
+            function updateUserInfoCards(user) {
+                selectedUserName.textContent = user.name || 'N/A';
+                selectedUserPhone.textContent = user.phone || 'N/A';
+                // Assuming 'role' and 'status' might also be in /users/{userId}
+                selectedUserRole.textContent = user.role || 'N/A';
+                const status = user.status || 'N/A';
+                selectedUserStatusBadge.textContent = status;
+                selectedUserStatusBadge.className = `status-badge ${getStatusClass(status)}`;
+                // Assuming 'dailyWage' is also in /users/{userId}
+                const wage = user.dailyWage || 0;
+                selectedUserDailyWage.textContent = formatNumber(wage);
+
+                // Calculate and display balance (requires fetching deductions)
+                calculateAndDisplayBalance(user.id, wage);
+            }
+
+            function calculateAndDisplayBalance(userId, dailyWage) {
+                 if (!database) {
+                     selectedUserBalance.textContent = 'रु 0';
+                     selectedUserBalance.className = 'card-value balance-badge';
+                     return;
+                 }
+
+                 let totalDeductions = 0;
+                 let presentDays = 0; // Needs to be fetched from /attendance
+
+                 // Fetch deductions
+                 const deductionsPromise = database.ref('deductions/' + userId).once('value')
+                     .then(snapshot => {
+                         if (snapshot.exists()) {
+                             snapshot.forEach(childSnapshot => {
+                                 const deduction = childSnapshot.val();
+                                 totalDeductions += parseFloat(deduction.amount) || 0;
+                             });
+                         }
+                     })
+                     .catch(error => {
+                         console.error("Error fetching deductions for balance:", error);
+                         // Continue with 0 deductions
+                     });
+
+                 // Fetch attendance to calculate wages earned
+                 const attendancePromise = database.ref('attendance').once('value')
+                     .then(snapshot => {
+                         if (snapshot.exists()) {
+                             snapshot.forEach(dateSnapshot => {
+                                 const userStatusSnapshot = dateSnapshot.child(userId);
+                                 if (userStatusSnapshot.exists() && userStatusSnapshot.val().status === 'Present') {
+                                     presentDays++;
+                                 }
+                             });
+                         }
+                     })
+                     .catch(error => {
+                         console.error("Error fetching attendance for balance:", error);
+                         // Continue with 0 present days
+                     });
+
+                 Promise.all([deductionsPromise, attendancePromise])
+                     .then(() => {
+                         const totalWages = presentDays * dailyWage;
+                         const balance = totalWages - totalDeductions;
+                         selectedUserBalance.innerHTML = `<span class="npr-symbol">रु</span> ${formatNumber(balance)}`;
+                         selectedUserBalance.className = `card-value balance-badge ${balance < 0 ? 'negative' : ''}`;
+                     })
+                     .catch(error => { // Catch errors from Promise.all
+                         console.error("Error calculating balance (Promise.all):", error);
+                         selectedUserBalance.textContent = 'रु 0';
+                         selectedUserBalance.className = 'card-value balance-badge';
+                         showToast('Error calculating user balance.', 'error');
+                     });
+            }
+
+            // --- Load User Data Button ---
+            loadUserDataBtn.addEventListener('click', function() {
+                 const selectedUserId = userFilter.value;
+                 if (!selectedUserId) {
+                     showToast('Please select a user from the filter.', 'error');
+                     return;
+                 }
+                 selectUser(selectedUserId);
+            });
+
+            // --- Generate Statement Button ---
+            generateStatementBtn.addEventListener('click', function() {
+                 if (!currentUserData) {
+                     showToast('Please select a user first.', 'error');
+                     return;
+                 }
+                 loadAndDisplayStatement(currentUserData.id);
+            });
+
+            // --- Load and Display Statement ---
+            function loadAndDisplayStatement(userId) {
+                if (!database) {
+                    showToast('Database not initialized.', 'error');
+                    return;
+                }
+
+                const user = allUsers[userId];
+                if (!user) {
+                    showToast('User data not found.', 'error');
+                    return;
+                }
+
+                // Update statement header
+                statementUserName.textContent = user.name || 'User';
+                statementUserDetails.textContent = `Phone: ${user.phone || 'N/A'}`;
+                const wageForStatement = user.dailyWage || 0;
+                statementDailyWage.textContent = formatNumber(wageForStatement);
+
+                // Show statement container, hide main table
+                mainTableContainer.style.display = 'none';
+                statementContainer.style.display = 'block';
+
+                let totalDeductions = 0;
+                let presentAttendance = [];
+
+                // Fetch deductions
+                const deductionsPromise = database.ref('deductions/' + userId).orderByChild('timestamp').once('value')
+                    .then(snapshot => {
+                        const deductions = [];
+                        if (snapshot.exists()) {
+                            snapshot.forEach(childSnapshot => {
+                                deductions.push({ id: childSnapshot.key, ...childSnapshot.val() });
+                                totalDeductions += parseFloat(childSnapshot.val().amount) || 0;
+                            });
+                        }
+                        return deductions;
+                    });
+
+                // Fetch attendance (simplified, adjust date filtering logic as needed)
+                const attendancePromise = database.ref('attendance').once('value')
+                    .then(snapshot => {
+                        const attendance = [];
+                        if (snapshot.exists()) {
+                            snapshot.forEach(dateSnapshot => {
+                                const userStatusSnapshot = dateSnapshot.child(userId);
+                                if (userStatusSnapshot.exists() && userStatusSnapshot.val().status === 'Present') {
+                                    // Get work place if available (adjust path as needed)
+                                    const workPlace = userStatusSnapshot.val().workPlace || 'N/A';
+                                    attendance.push({
+                                        date: dateSnapshot.key, // Date is the key
+                                        status: 'Present',
+                                        workPlace: workPlace
+                                    });
+                                }
+                            });
+                        }
+                        return attendance;
+                    });
+
+                Promise.all([deductionsPromise, attendancePromise])
+                    .then(([deductions, attendance]) => {
+                        presentAttendance = attendance; // Store for balance calculation
+
+                        const totalWages = presentAttendance.length * wageForStatement;
+                        const finalBalance = totalWages - totalDeductions;
+                        statementCurrentBalance.textContent = formatNumber(finalBalance);
+                        statementCurrentBalance.className = `statement-total-amount ${finalBalance < 0 ? 'negative' : ''}`;
+                        statementFinalBalance.textContent = `रु ${formatNumber(finalBalance)}`;
+                        statementFinalBalance.className = `statement-total-amount ${finalBalance < 0 ? 'negative' : ''}`;
+
+                        displayStatementDetails(presentAttendance, deductions, wageForStatement);
+                    })
+                    .catch(error => {
+                        console.error("Error loading statement ", error);
+                        statementDetailsList.innerHTML = '<div class="no-data">Error loading statement data.</div>';
+                        statementCurrentBalance.textContent = 'रु 0';
+                        statementFinalBalance.textContent = 'रु 0';
+                        showToast('Error loading statement data.', 'error');
+                    });
+            }
+
+            function displayStatementDetails(attendance, deductions, dailyWage) {
+                statementDetailsList.innerHTML = '';
+
+                if (attendance.length === 0 && deductions.length === 0) {
+                    statementDetailsList.innerHTML = '<div class="no-data">No attendance or deduction records found.</div>';
+                    return;
+                }
+
+                // Display Attendance
+                if (attendance.length > 0) {
+                    const attHeader = document.createElement('h4');
+                    attHeader.textContent = 'Attendance Records';
+                    attHeader.style.marginTop = '1rem';
+                    statementDetailsList.appendChild(attHeader);
+
+                    attendance.forEach(record => {
+                        const entryDiv = document.createElement('div');
+                        entryDiv.className = 'account-entry';
+                        entryDiv.innerHTML = `
+                            <div class="account-date">${formatDate(record.date)}</div>
+                            <div class="account-type credit">ATTENDANCE</div>
+                            <div class="account-details">
+                                <div><strong>Status:</strong> ${record.status}</div>
+                                <div><strong>Work Place:</strong> ${record.workPlace}</div>
+                                <div><strong>Earned:</strong> <span class="npr-symbol">रु</span> ${formatNumber(dailyWage)}</div>
+                            </div>
+                            <div class="account-amount credit">
+                                <span class="npr-symbol">रु</span> ${formatNumber(dailyWage)}
+                            </div>
+                        `;
+                        statementDetailsList.appendChild(entryDiv);
+                    });
+                } else {
+                     const attHeader = document.createElement('h4');
+                     attHeader.textContent = 'Attendance Records';
+                     attHeader.style.marginTop = '1rem';
+                     statementDetailsList.appendChild(attHeader);
+                     statementDetailsList.innerHTML += '<div class="no-data">No attendance records found.</div>';
+                }
+
+                // Display Deductions
+                if (deductions.length > 0) {
+                    const dedHeader = document.createElement('h4');
+                    dedHeader.textContent = 'Deduction Records';
+                    dedHeader.style.marginTop = '1.5rem';
+                    statementDetailsList.appendChild(dedHeader);
+
+                    deductions.forEach(record => {
+                        const entryDiv = document.createElement('div');
+                        entryDiv.className = 'account-entry';
+                        entryDiv.innerHTML = `
+                            <div class="account-date">${formatDate(record.date)}</div>
+                            <div class="account-type debit">DEDUCTION</div>
+                            <div class="account-details">
+                                <div><strong>Category:</strong> ${record.category}</div>
+                                <div><strong>Reason:</strong> ${record.reason}</div>
+                                <div><strong>Note:</strong> ${record.note || 'N/A'}</div>
+                            </div>
+                            <div class="account-amount debit">
+                                <span class="npr-symbol">रु</span> ${formatNumber(record.amount)}
+                            </div>
+                        `;
+                        statementDetailsList.appendChild(entryDiv);
+                    });
+                } else {
+                     const dedHeader = document.createElement('h4');
+                     dedHeader.textContent = 'Deduction Records';
+                     dedHeader.style.marginTop = '1.5rem';
+                     statementDetailsList.appendChild(dedHeader);
+                     statementDetailsList.innerHTML += '<div class="no-data">No deduction records found.</div>';
+                }
+            }
+
+
+            // --- Close Statement ---
+            closeStatementBtn.addEventListener('click', function() {
+                 statementContainer.style.display = 'none';
+                 mainTableContainer.style.display = 'block';
+                 currentUserData = null; // Reset current user view
+                 // Reset card values
+                 selectedUserName.textContent = 'None';
+                 selectedUserPhone.textContent = '-';
+                 selectedUserRole.textContent = '-';
+                 selectedUserStatusBadge.textContent = '-';
+                 selectedUserStatusBadge.className = 'status-badge';
+                 selectedUserDailyWage.textContent = '0';
+                 selectedUserBalance.innerHTML = '<span class="npr-symbol">रु</span> 0';
+                 selectedUserBalance.className = 'card-value balance-badge';
+            });
+
+            // --- Deduct Balance Modal ---
+            function openDeductBalanceModal(user) {
+                deductUserId.value = user.id;
+                deductUserName.textContent = user.name || 'User';
+                // Fetch current balance again for modal (using the same logic)
+                const wageForModal = user.dailyWage || 0;
+                calculateAndDisplayBalance(user.id, wageForModal); // This updates the card, we'll use the card value
+                // Reset form fields
+                deductAmount.value = '';
+                deductCategory.value = '';
+                deductReason.value = '';
+                deductNote.value = '';
+                deductBalanceModal.style.display = 'flex';
+                deductAmount.focus();
+            }
+
+            function closeDeductBalanceModalFunc() {
+                deductBalanceModal.style.display = 'none';
+            }
+
+            closeDeductModal.addEventListener('click', closeDeductBalanceModalFunc);
+            cancelDeductBtn.addEventListener('click', closeDeductBalanceModalFunc);
+            deductBalanceModal.addEventListener('click', function(e) {
+                if (e.target === deductBalanceModal) closeDeductBalanceModalFunc();
+            });
+
+            deductFromStatementBtn.addEventListener('click', function() {
+                 if (!currentUserData) {
+                     showToast('No user selected for statement.', 'error');
+                     return;
+                 }
+                 openDeductBalanceModal(currentUserData);
+            });
+
+            // Deduct Balance Form Submission
+            deductBalanceForm.addEventListener('submit', function(e) {
+                 e.preventDefault();
+                 if (!database) {
+                     showToast('Database not initialized.', 'error');
+                     closeDeductBalanceModalFunc();
+                     return;
+                 }
+
+                 const userId = deductUserId.value;
+                 const amount = parseFloat(deductAmount.value);
+                 const category = deductCategory.value.trim();
+                 const reason = deductReason.value.trim();
+                 const note = deductNote.value.trim();
+
+                 if (isNaN(amount) || amount <= 0) {
+                     showToast('Please enter a valid deduction amount.', 'error');
+                     return;
+                 }
+                 if (!category) {
+                     showToast('Please select a category.', 'error');
+                     return;
+                 }
+                 if (!reason) {
+                     showToast('Please enter a reason.', 'error');
+                     return;
+                 }
+
+                 const deductionData = {
+                     amount: amount,
+                     category: category,
+                     reason: reason,
+                     note: note,
+                     date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+                     timestamp: new Date().toISOString() // For ordering
+                 };
+
+                 const newDeductionRef = database.ref('deductions/' + userId).push();
+                 newDeductionRef.set(deductionData)
+                     .then(() => {
+                         showToast(`रु ${formatNumber(amount)} deducted successfully.`, 'success');
+                         closeDeductBalanceModalFunc();
+                         // Refresh UI
+                         if (currentUserData && currentUserData.id === userId) {
+                             updateUserInfoCards(currentUserData); // Refresh balance on cards
+                             // If statement is open for this user, refresh it
+                             if (statementContainer.style.display !== 'none') {
+                                 loadAndDisplayStatement(userId);
+                             }
+                         }
+                     })
+                     .catch(error => {
+                         console.error("Error deducting balance:", error);
+                         showToast('Failed to deduct balance. Please try again.', 'error');
+                     });
+            });
+
+            // --- PDF Generation ---
+            let jsPDF;
+            if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
+                 jsPDF = window.jspdf.jsPDF;
+            } else {
+                 console.error('jsPDF library not loaded correctly.');
+                 showToast('PDF generation library not loaded. Download might not work.', 'error');
+            }
+
+            downloadPdfBtn.addEventListener('click', generatePDF);
+
+            function generatePDF() {
+                 if (!currentUserData || !jsPDF) {
+                     showToast('Cannot generate PDF: No user/statement loaded or library missing.', 'error');
+                     return;
+                 }
+
+                 const filter = pdfDateFilter.value;
+                 const userName = currentUserData.name || 'User';
+                 let fileName = `${userName}_Statement_${new Date().toISOString().slice(0, 10)}.pdf`;
+                 if (filter === 'monthly') {
+                     fileName = `${userName}_Statement_Monthly_${new Date().toISOString().slice(0, 10)}.pdf`;
+                 } else if (filter === 'weekly') {
+                     fileName = `${userName}_Statement_Weekly_${new Date().toISOString().slice(0, 10)}.pdf`;
+                 }
+
+                 // Use html2canvas to capture the statement container
+                 html2canvas(statementContainer, {
+                     scale: 2, // Increase quality
+                     useCORS: true,
+                     logging: false,
+                     onclone: function(clonedDoc) {
+                         // Ensure elements are visible in the cloned document for PDF
+                         clonedDoc.getElementById('statementContainer').style.display = 'block';
+                         // Apply any necessary styles for PDF if needed
+                     }
+                 }).then(canvas => {
+                     const imgData = canvas.toDataURL('image/png');
+                     const pdf = new jsPDF('p', 'mm', 'a4');
+                     const imgWidth = 210; // A4 width in mm
+                     const pageHeight = 297; // A4 height in mm
+                     const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                     let heightLeft = imgHeight;
+                     let position = 0;
+
+                     pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                     heightLeft -= pageHeight;
+
+                     // Add new pages if content overflows
+                     while (heightLeft >= 0) {
+                         position = heightLeft - imgHeight;
+                         pdf.addPage();
+                         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                         heightLeft -= pageHeight;
+                     }
+                     pdf.save(fileName);
+                     showToast('PDF generated and download started.', 'success');
+                 }).catch(err => {
+                     console.error('Error generating PDF:', err);
+                     showToast('Failed to generate PDF. Please try again.', 'error');
+                 });
+            }
+            // --- End PDF Generation ---
+
+            // --- Helper Functions ---
+            function getStatusClass(status) {
+                switch(status?.toLowerCase()) {
+                    case 'active': return 'status-active';
+                    case 'inactive': return 'status-inactive';
+                    case 'on leave': return 'status-leave';
+                    case 'present': return 'status-present';
+                    case 'absent': return 'status-absent';
+                    default: return '';
+                }
+            }
+
+            function formatNumber(num) {
+                // Ensure it's a number and format with 2 decimals
+                const number = typeof num === 'number' ? num : parseFloat(num);
+                if (isNaN(number)) return '0.00';
+                return new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
+            }
+
+            function formatDate(dateString) {
+                 if (!dateString) return 'N/A';
+                 const options = { year: 'numeric', month: 'short', day: 'numeric' };
+                 const parts = dateString.split('-');
+                 if (parts.length === 3) {
+                     // Months are 0-indexed in JS Date constructor
+                     const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                     if (isNaN(dateObj.getTime())) return dateString;
+                     return dateObj.toLocaleDateString('en-US', options);
+                 }
+                 // If dateString is not in YYYY-MM-DD format, try parsing directly
+                 const directDate = new Date(dateString);
+                 if (!isNaN(directDate.getTime())) {
+                      return directDate.toLocaleDateString('en-US', options);
+                 }
+                 return dateString;
+            }
+
+            function showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `toast toast-${type}`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                setTimeout(() => {
+                    toast.classList.add('show');
+                }, 10);
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                }, 3000);
+            }
+
+            // --- Initialize ---
+            loadUsers();
+        });
+    </script>
+</body>
+</html>

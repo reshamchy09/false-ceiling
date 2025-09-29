@@ -1,0 +1,608 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* Enhanced Animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    /* Container Enhancements */
+    .contact-container {
+        animation: fadeInUp 0.8s ease-out;
+    }
+
+    .page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 120px 0 100px;   /* taller header */
+    margin-bottom: 50px;
+    color: white;
+    border-radius: 0 0 50px 50px;
+    box-shadow: 0 15px 45px rgba(102, 126, 234, 0.35);
+    text-align: center;
+}
+
+.page-header h1 {
+    font-size: 3.5rem;   /* larger heading */
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.page-header p {
+    font-size: 1.3rem;   /* larger subtitle */
+    opacity: 0.95;
+}
+    /* Enhanced Cards */
+    .enhanced-card {
+        border: none;
+        border-radius: 20px;
+        background: white;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .enhanced-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .enhanced-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+
+    /* Contact Info Items */
+    .contact-info-item {
+        padding: 20px;
+        border-radius: 15px;
+        background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(102, 126, 234, 0.1);
+    }
+
+    .contact-info-item:hover {
+        transform: translateX(10px);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .contact-info-item:hover .icon-wrapper {
+        background: white;
+        color: #667eea;
+        animation: pulse 1s infinite;
+    }
+
+    .contact-info-item:hover h5,
+    .contact-info-item:hover p,
+    .contact-info-item:hover a {
+        color: white !important;
+    }
+
+    .icon-wrapper {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    /* Social Media Buttons */
+    .social-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #667eea;
+        color: #667eea;
+        background: white;
+        transition: all 0.3s ease;
+        font-size: 1.3rem;
+        text-decoration: none;
+    }
+
+    .social-btn:hover {
+        transform: translateY(-5px) rotate(360deg);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .social-btn.facebook:hover {
+        background: #3b5998;
+        border-color: #3b5998;
+        color: white;
+    }
+
+    .social-btn.instagram:hover {
+        background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+        border-color: #dc2743;
+        color: white;
+    }
+
+    .social-btn.twitter:hover {
+        background: #1da1f2;
+        border-color: #1da1f2;
+        color: white;
+    }
+
+    .social-btn.linkedin:hover {
+        background: #0077b5;
+        border-color: #0077b5;
+        color: white;
+    }
+
+    /* Map Container */
+    .map-container {
+        position: relative;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+
+    .map-container::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 20px;
+        box-shadow: inset 0 0 0 1px rgba(102, 126, 234, 0.1);
+        pointer-events: none;
+    }
+
+    /* Form Enhancements */
+    .form-label {
+        font-weight: 600;
+        color: #4a5568;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px 16px;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        transform: translateY(-2px);
+    }
+
+    /* Service Row */
+    .service-row {
+        background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 20px !important;
+        padding: 25px !important;
+        margin-bottom: 20px !important;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .service-row::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px 20px 0 0;
+    }
+
+    .service-row:hover {
+        border-color: #667eea !important;
+        box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
+        transform: translateY(-3px);
+    }
+
+    /* Buttons */
+    .btn {
+        border-radius: 12px;
+        padding: 12px 30px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.9rem;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #718096 0%, #4a5568 100%);
+        color: white;
+        box-shadow: 0 5px 15px rgba(113, 128, 150, 0.3);
+    }
+
+    .btn-secondary:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(113, 128, 150, 0.4);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+        box-shadow: 0 5px 15px rgba(245, 101, 101, 0.3);
+    }
+
+    .btn-danger:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(245, 101, 101, 0.4);
+    }
+
+    /* Section Headers */
+    .section-header {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 40px;
+    }
+
+    .section-header h2 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .section-header::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 4px;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        border-radius: 2px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .page-header h1 {
+            font-size: 2rem;
+        }
+        
+        .contact-info-item:hover {
+            transform: translateX(5px);
+        }
+    }
+</style>
+
+<div class="contact-container">
+    <div class="page-header">
+        <div class="container">
+            <h1 class="text-center">Get In Touch</h1>
+            <p class="text-center mb-0">We'd love to hear from you. Reach out to us today!</p>
+        </div>
+    </div>
+
+    <!-- Contact Form -->
+        <div class="text-center section-header w-100">
+            <h2>Send Us a Message</h2>
+        </div>
+        
+        <form method="POST" id="contactForm" class="enhanced-card p-4 p-md-5">
+            {% csrf_token %}
+            
+            <!-- Contact Info Fields -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" name="full_name" class="form-control" placeholder="John Doe" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-control" placeholder="john@example.com" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" name="phone" class="form-control" placeholder="+1 (234) 567-890">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Full Address</label>
+                    <input type="text" name="address" class="form-control" placeholder="City, State" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Number of Rooms</label>
+                  <input type="number" name="rooms" class="form-control" placeholder="Enter number of rooms" min="1" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Message</label>
+                    <textarea name="message" class="form-control" rows="4" placeholder="Tell us about your project..." required></textarea>
+                </div>
+            </div>
+
+            <!-- Services Selection -->
+            <h5 class="mb-3" style="color: #2d3748; font-weight: 700;">Service Details</h5>
+            <div id="serviceContainer">
+                <div class="service-row">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label">Category</label>
+                            <select class="form-select category-select" onchange="filterServices(this)" required>
+                                <option value="" disabled selected>-- Select Category --</option>
+                                {% for cat_value, cat_label in category_choices %}
+                                    <option value="{{ cat_value }}">{{ cat_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Service</label>
+                            <select class="form-select service-select" name="service[]" required disabled>
+                                <option value="" disabled selected>-- Select Category First --</option>
+                                {% for service in services %}
+                                    <option value="{{ service.id }}" data-category="{{ service.category }}" style="display:none;">
+                                        {{ service.title }} (Rs. {{ service.price_per_sqft }}/sqft)
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Width (ft)</label>
+                            <input type="number" name="width[]" class="form-control" min="1" step="0.01" placeholder="0" required>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Length (ft)</label>
+                            <input type="number" name="length[]" class="form-control" min="1" step="0.01" placeholder="0" required>
+                        </div>
+
+                        <div class="col-md-12 mt-3">
+                            <button type="button" class="btn btn-danger w-100" onclick="removeRow(this)">
+                                <i class="bi bi-trash me-2"></i> Remove Service
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mt-4">
+                <button type="button" class="btn btn-secondary" onclick="addServiceRow()">
+                    <i class="bi bi-plus-circle me-2"></i> Add More Service
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-send me-2"></i> Submit Request
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="container my-5">
+        <!-- Contact Details and Map Section -->
+        <div class="row mb-5">
+            <!-- Contact Information -->
+            <div class="col-lg-6 mb-4">
+                <div class="enhanced-card h-100 p-4">
+                    <h3 class="mb-4" style="color: #2d3748; font-weight: 700;">Contact Information</h3>
+                    
+                    <div class="contact-info-item">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-wrapper me-3">
+                                <i class="bi bi-geo-alt-fill"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1" style="color: #2d3748;">Address</h5>
+                                <p class="text-muted mb-0">Your Shop Address Here<br>City, State - Postal Code</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-info-item">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-wrapper me-3">
+                                <i class="bi bi-telephone-fill"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1" style="color: #2d3748;">Phone</h5>
+                                <p class="text-muted mb-0">
+                                    <a href="tel:+1234567890" class="text-decoration-none text-muted">+1 (234) 567-890</a><br>
+                                    <a href="tel:+0987654321" class="text-decoration-none text-muted">+0 (987) 654-321</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-info-item">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-wrapper me-3">
+                                <i class="bi bi-envelope-fill"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1" style="color: #2d3748;">Email</h5>
+                                <p class="text-muted mb-0">
+                                    <a href="mailto:info@yourshop.com" class="text-decoration-none text-muted">info@yourshop.com</a><br>
+                                    <a href="mailto:support@yourshop.com" class="text-decoration-none text-muted">support@yourshop.com</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-info-item">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-wrapper me-3">
+                                <i class="bi bi-clock-fill"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1" style="color: #2d3748;">Business Hours</h5>
+                                <p class="text-muted mb-0">
+                                    Monday - Friday: 9:00 AM - 6:00 PM<br>
+                                    Saturday: 10:00 AM - 4:00 PM<br>
+                                    Sunday: Closed
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Social Media Links -->
+                    <div class="mt-4 pt-4" style="border-top: 2px solid #e2e8f0;">
+                        <h5 class="mb-3" style="color: #2d3748; font-weight: 700;">Follow Us</h5>
+                        <div class="d-flex gap-3">
+                            <a href="#" class="social-btn facebook">
+                                <i class="bi bi-facebook"></i>
+                            </a>
+                            <a href="#" class="social-btn instagram">
+                                <i class="bi bi-instagram"></i>
+                            </a>
+                            <a href="#" class="social-btn twitter">
+                                <i class="bi bi-twitter"></i>
+                            </a>
+                            <a href="#" class="social-btn linkedin">
+                                <i class="bi bi-linkedin"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Google Map -->
+            <div class="col-lg-6 mb-4">
+                <div class="enhanced-card h-100 p-0">
+                    <div class="map-container" style="height: 100%; min-height: 600px;">
+                        <iframe 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3532.7261771240544!2d85.31036931506166!3d27.69762138279895!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb19b0b5b8f8e3%3A0x8f8f8f8f8f8f8f8f!2sKathmandu%2C%20Nepal!5e0!3m2!1sen!2snp!4v1234567890123!5m2!1sen!2snp" 
+                            width="100%" 
+                            height="100%" 
+                            style="border:0;" 
+                            allowfullscreen="" 
+                            loading="lazy" 
+                            referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+</div>
+
+<script>
+function filterServices(categorySelect) {
+    const cat = categorySelect.value;
+    const serviceSelect = categorySelect.closest('.service-row').querySelector('.service-select');
+    
+    serviceSelect.disabled = false;
+    serviceSelect.selectedIndex = 0;
+    serviceSelect.options[0].text = '-- Select Service --';
+    
+    let hasVisibleOptions = false;
+    Array.from(serviceSelect.options).forEach(opt => {
+        if (!opt.value) {
+            opt.style.display = 'block';
+            return;
+        }
+        
+        if (opt.dataset.category === cat) {
+            opt.style.display = 'block';
+            hasVisibleOptions = true;
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+    
+    if (!hasVisibleOptions) {
+        serviceSelect.options[0].text = '-- No Services Available --';
+        serviceSelect.disabled = true;
+    }
+}
+
+function addServiceRow() {
+    const container = document.getElementById('serviceContainer');
+    const newRow = container.children[0].cloneNode(true);
+    
+    const categorySelect = newRow.querySelector('.category-select');
+    const serviceSelect = newRow.querySelector('.service-select');
+    
+    categorySelect.selectedIndex = 0;
+    serviceSelect.selectedIndex = 0;
+    serviceSelect.disabled = true;
+    serviceSelect.options[0].text = '-- Select Category First --';
+    
+    Array.from(serviceSelect.options).forEach(opt => {
+        if (opt.value) {
+            opt.style.display = 'none';
+        }
+    });
+    
+    newRow.querySelector('input[name="width[]"]').value = '';
+    newRow.querySelector('input[name="length[]"]').value = '';
+    
+    container.appendChild(newRow);
+    
+    // Smooth scroll to new row
+    setTimeout(() => {
+        newRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+}
+
+function removeRow(btn) {
+    const container = document.getElementById('serviceContainer');
+    if (container.children.length > 1) {
+        const row = btn.closest('.service-row');
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(-100px)';
+        setTimeout(() => row.remove(), 300);
+    } else {
+        alert("At least one service row is required.");
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.service-select').forEach(select => {
+        if (select.closest('.service-row').querySelector('.category-select').value === '') {
+            select.disabled = true;
+        }
+    });
+});
+</script>
+{% endblock %}

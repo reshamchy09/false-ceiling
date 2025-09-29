@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}User Dashboard - Dhangadhi False Ceiling{% endblock %}
+
+{% block content %}
+<section class="section-padding bg-light">
+    <div class="container">
+        <h2 class="fw-bold mb-4 gradient-text">Welcome, {{ request.user.username }}!</h2>
+
+        <div class="card shadow-sm border-0 p-4">
+            <h4 class="mb-3">Your Dashboard</h4>
+            <p>Here you can manage your estimates, view updates, or contact support.</p>
+
+            <div class="d-flex gap-3 flex-wrap">
+                <a href="{% url 'estimate_calculator' %}" class="btn btn-primary-custom">Estimate Calculator</a>
+                <a href="{% url 'contact' %}" class="btn btn-outline-secondary">Contact Support</a>
+                <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

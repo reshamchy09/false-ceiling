@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Modern Hero Header with Gradient -->
+<section class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 100px 0 80px;">
+    <div class="position-absolute top-0 start-0 w-100 h-100" 
+         style="background: url('data:image/svg+xml;utf8,<svg width=\'100\' height=\'100\' xmlns=\'http://www.w3.org/2000/svg\'><defs><pattern id=\'grid\' width=\'40\' height=\'40\' patternUnits=\'userSpaceOnUse\'><path d=\'M 40 0 L 0 0 0 40\' fill=\'none\' stroke=\'rgba(255,255,255,0.05)\' stroke-width=\'1\'/></pattern></defs><rect width=\'100\' height=\'100\' fill=\'url(%23grid)\'/></svg>'); opacity: 0.3;">
+    </div>
+    <div class="container text-center position-relative">
+        <h1 class="display-3 fw-bold text-white mb-3" data-aos="fade-down">Our Services</h1>
+        <p class="lead text-white-50 mb-4" data-aos="fade-up" data-aos-delay="100">
+            Explore our premium ceiling design portfolio
+        </p>
+        <nav class="d-inline-flex align-items-center bg-white bg-opacity-10 rounded-pill px-4 py-2" data-aos="fade-up" data-aos-delay="200">
+            <a href="/" class="text-decoration-none text-white me-2 hover-opacity">Home</a>
+            <span class="text-white-50 mx-2">›</span>
+            <span class="text-white">Services</span>
+        </nav>
+    </div>
+</section>
+
+<!-- Portfolio Section -->
+<section class="py-5 bg-light">
+    <div class="container py-4">
+
+        <!-- Filter Tabs -->
+        <div class="d-flex justify-content-center mb-5" data-aos="fade-up">
+            <div class="bg-white shadow-sm rounded-pill p-2">
+                <ul class="nav nav-pills gap-2 m-0" id="portfolioTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link px-4 py-2 rounded-pill text-nowrap {% if selected_category == 'all' %}active{% endif %}"
+                           href="?category=all">
+                            All Projects
+                        </a>
+                    </li>
+                    {% for value, label in categories %}
+                    <li class="nav-item">
+                        <a class="nav-link px-4 py-2 rounded-pill text-nowrap {% if selected_category == value %}active{% endif %}"
+                           href="?category={{ value }}">
+                            {{ label }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Projects Grid -->
+        <div class="row g-4">
+            {% for myproject in projects %}
+            <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:'50' }}">
+                <div class="card border-0 shadow-sm h-100 overflow-hidden">
+                    
+                    <!-- Image -->
+                    <div class="position-relative overflow-hidden" style="height: 280px;">
+                        <img src="{{ myproject.image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ myproject.title }}">
+                        
+                        <!-- Overlay -->
+                        <div class="overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+                            <a href="{{ myproject.image.url }}" 
+                               class="btn btn-light rounded-circle p-3 shadow"
+                               data-lightbox="portfolio" data-title="{{ myproject.title }}">
+                                <i class="bi bi-zoom-in" style="font-size: 20px;"></i>
+                            </a>
+                        </div>
+
+                        <!-- Category Badge -->
+                        <div class="position-absolute top-0 end-0 m-3">
+                            <span class="badge rounded-pill px-3 py-2 shadow-sm bg-white text-primary fw-bold">
+                                {{ myproject.get_category_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Card Body -->
+                    <div class="card-body p-4 d-flex flex-column">
+                        <h5 class="fw-bold mb-3 text-dark">{{ myproject.title }}</h5>
+                        <p class="text-muted mb-3" style="font-size: 0.95rem;">{{ myproject.description|truncatewords:15 }}</p>
+                        
+                        <div class="mt-auto d-flex align-items-center">
+                            <i class="bi bi-currency-rupee text-primary me-1"></i>
+                            <span class="fw-bold text-dark" style="font-size: 1.1rem;">{{ myproject.price_per_sqft }}</span>
+                            <span class="text-muted ms-1" style="font-size: 0.85rem;">/sqft</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-folder-x" style="font-size: 64px; color: #ccc;"></i>
+                <p class="text-muted fs-5">No projects found for this category.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if projects.has_other_pages %}
+        <nav aria-label="Page navigation" class="mt-5" data-aos="fade-up">
+            <ul class="pagination justify-content-center gap-2">
+                {% if projects.has_previous %}
+                <li class="page-item">
+                    <a class="page-link border-0 rounded-circle shadow-sm" 
+                       href="?category={{ selected_category }}&page={{ projects.previous_page_number }}">
+                        ←
+                    </a>
+                </li>
+                {% endif %}
+                {% for num in projects.paginator.page_range %}
+                <li class="page-item">
+                    <a class="page-link border-0 rounded-circle shadow-sm {% if projects.number == num %}active text-white{% endif %}" 
+                       href="?category={{ selected_category }}&page={{ num }}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endfor %}
+                {% if projects.has_next %}
+                <li class="page-item">
+                    <a class="page-link border-0 rounded-circle shadow-sm" 
+                       href="?category={{ selected_category }}&page={{ projects.next_page_number }}">
+                        →
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 100px 0;">
+    <div class="container text-center position-relative">
+        <h2 class="display-5 fw-bold text-white mb-4">Need Custom Ceiling Design?</h2>
+        <p class="lead text-white mb-5 opacity-90">Contact us today to discuss your unique requirements and bring your vision to life!</p>
+        <a href="/contact" class="btn btn-light btn-lg px-5 py-3 rounded-pill shadow-lg fw-semibold">
+            <i class="bi bi-envelope-fill me-2"></i> Contact Us Now
+        </a>
+    </div>
+</section>
+
+<!-- CSS -->
+<style>
+    .card { transition: all 0.3s ease; }
+    .card:hover { transform: translateY(-8px); box-shadow: 0 12px 40px rgba(0,0,0,0.15) !important; }
+    .card img { transition: transform 0.5s ease; }
+    .card:hover img { transform: scale(1.1); }
+    .overlay { background: linear-gradient(135deg, rgba(102,126,234,0.8), rgba(118,75,162,0.8)); opacity: 0; transition: opacity 0.3s ease; }
+    .card:hover .overlay { opacity: 1; }
+    .nav-link.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; color: #fff !important; }
+    .nav-link:not(.active):hover { background: rgba(102, 126, 234, 0.1) !important; color: #667eea !important; }
+    .page-link { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+    .page-link.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; color: #fff !important; }
+    .page-link:hover { transform: scale(1.1); }
+    .btn-light:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.2) !important; }
+    .hover-opacity:hover { opacity: 0.8; }
+</style>
+{% endblock %}

@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>False Ceiling Purchase Management</title>
+    <!-- Firebase SDK (Compat version) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <!-- jsPDF library for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .nav-link:hover:before {
+            left: 100%;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(8px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            opacity: 0.8;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            transition: margin-left 0.3s ease;
+        }
+
+        .page {
+            animation: fadeInUp 0.6s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card:hover:before {
+            transform: scaleX(1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-description {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-pdf {
+            background: #e74c3c;
+            color: white;
+            border: none;
+        }
+
+        .btn-pdf:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-delivered {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+
+        .status-cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-processing {
+            background: #e0f2fe;
+            color: #075985;
+        }
+
+        .status-paid {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-partial {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1002;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+        }
+
+        .card-animated {
+            animation: pulse 2s infinite;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content, .view-modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #374151;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .item-row {
+            display: grid;
+            grid-template-columns: 2fr 2fr 1fr 1fr 40px;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            align-items: center;
+        }
+
+        .add-item {
+            background: none;
+            color: #667eea;
+            border: 1px dashed #667eea;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+
+        .add-item:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .remove-item {
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .remove-item:hover {
+            background: #dc2626;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .item-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="sidebar-toggle" aria-label="Toggle Sidebar">☰</button>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>False Ceiling Pro</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link" aria-label="Home">
+                        <span class="nav-icon">🏠</span>
+                        Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link" aria-label="Dashboard">
+                        <span class="nav-icon">📊</span>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="inventory.html" class="nav-link" aria-label="Inventory">
+                        <span class="nav-icon">📦</span>
+                        Inventory
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="sales.html" class="nav-link" aria-label="Sales">
+                        <span class="nav-icon">💰</span>
+                        Sales
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="customers.html" class="nav-link" aria-label="Customers">
+                        <span class="nav-icon">👥</span>
+                        Customers
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link" aria-label="Employees">
+                        <span class="nav-icon">👤</span>
+                        Employees
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="invoice.html" class="nav-link" aria-label="Invoice and Billing">
+                        <span class="nav-icon">📄</span>
+                        Invoice & Billing
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="purchase.html" class="nav-link active" aria-label="Purchase">
+                        <span class="nav-icon">🛒</span>
+                        Purchase
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="expense.html" class="nav-link" aria-label="Expense">
+                        <span class="nav-icon">💸</span>
+                        Expense
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="tasks.html" class="nav-link" aria-label="Task Assignment">
+                        <span class="nav-icon">✅</span>
+                        Task Assignment
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="payments.html" class="nav-link" aria-label="Payment Track">
+                        <span class="nav-icon">💳</span>
+                        Payment Track
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="website.html" class="nav-link" aria-label="Website Management">
+                        <span class="nav-icon">🌐</span>
+                        Website Management
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="ledger.html" class="nav-link" aria-label="Ledger">
+                        <span class="nav-icon">📚</span>
+                        Ledger
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.html" class="nav-link" aria-label="Settings">
+                        <span class="nav-icon">⚙️</span>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="page">
+                <div class="page-header">
+                    <h1 class="page-title">False Ceiling Purchase</h1>
+                    <p class="page-subtitle">Track and manage false ceiling material purchases</p>
+                </div>
+
+                <div id="databaseError" class="error-message" role="alert"></div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <button class="btn btn-primary" onclick="showCreateModal()" aria-label="Create New Purchase Order">
+                            ➕ Create Purchase Order
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🛒</div>
+                            <div class="card-title">Pending Orders</div>
+                        </div>
+                        <div class="card-value" id="pendingOrders">0</div>
+                        <div class="card-description">Awaiting delivery</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">💰</div>
+                            <div class="card-title">Total This Month</div>
+                        </div>
+                        <div class="card-value" id="monthlyTotal">NPR 0</div>
+                        <div class="card-description">Total purchase amount</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="color: #374151;">Purchase Orders</h3>
+                        <div>
+                            <input type="text" class="form-input search-input" placeholder="Search purchase orders..." aria-label="Search purchase orders" style="margin-right: 10px;">
+                            <button class="btn btn-pdf" onclick="downloadAllOrdersPDF()" aria-label="Download PDF">
+                                📄 Download PDF
+                            </button>
+                        </div>
+                    </div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Order ID</th>
+                                <th scope="col">Supplier</th>
+                                <th scope="col">Amount (NPR)</th>
+                                <th scope="col">Order Date</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Payment</th>
+                                <th scope="col">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="purchaseTableBody">
+                            <tr>
+                                <td colspan="7" style="text-align: center;">Loading purchase orders...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Modal for creating purchase order -->
+                <div class="modal" id="createModal" role="dialog" aria-labelledby="createModalTitle">
+                    <div class="modal-content">
+                        <span class="modal-close" onclick="closeCreateModal()" aria-label="Close modal">×</span>
+                        <h2 id="createModalTitle">Create False Ceiling Purchase Order</h2>
+                        <form id="purchaseForm" onsubmit="createPurchaseOrder(event)">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="supplier">Supplier Name</label>
+                                    <input type="text" id="supplier" class="form-input" required aria-label="Supplier Name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="supplierContact">Supplier Contact</label>
+                                    <input type="text" id="supplierContact" class="form-input" aria-label="Supplier Contact">
+                                </div>
+                                <div class="form-group">
+                                    <label for="location">Location</label>
+                                    <input type="text" id="location" class="form-input" aria-label="Location">
+                                </div>
+                                <div class="form-group">
+                                    <label for="orderDate">Order Date</label>
+                                    <input type="date" id="orderDate" class="form-input" required aria-label="Order Date">
+                                </div>
+                                <div class="form-group">
+                                    <label for="paymentStatus">Payment Status</label>
+                                    <select id="paymentStatus" class="form-input" required aria-label="Payment Status">
+                                        <option value="Pending">Pending</option>
+                                        <option value="Partial">Partial</option>
+                                        <option value="Paid">Paid</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="status">Order Status</label>
+                                    <select id="status" class="form-input" required aria-label="Order Status">
+                                        <option value="Pending">Pending</option>
+                                        <option value="Processing">Processing</option>
+                                        <option value="Delivered">Delivered</option>
+                                        <option value="Cancelled">Cancelled</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Materials</label>
+                                <div id="itemsContainer">
+                                    <div class="item-row">
+                                        <select class="form-input item-category" required aria-label="Material Category">
+                                            <option value="">Select Category</option>
+                                            <option value="Ceiling Panels">Ceiling Panels</option>
+                                            <option value="Framework">Framework</option>
+                                            <option value="Insulation">Insulation</option>
+                                            <option value="Lighting">Lighting</option>
+                                            <option value="Accessories">Accessories</option>
+                                        </select>
+                                        <select class="form-input item-name" required aria-label="Material Name">
+                                            <option value="">Select Material</option>
+                                        </select>
+                                        <input type="number" class="form-input item-quantity" placeholder="Qty" required aria-label="Quantity" min="1">
+                                        <input type="number" class="form-input item-price" placeholder="Price (NPR)" required aria-label="Price" min="0" step="0.01">
+                                        <button type="button" class="remove-item" onclick="removeItemRow(this)" aria-label="Remove Item">×</button>
+                                    </div>
+                                </div>
+                                <button type="button" class="add-item" onclick="addItemRow()" aria-label="Add Item">+ Add Material</button>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="notes">Notes</label>
+                                <textarea id="notes" class="form-input" rows="3" placeholder="Additional notes..." aria-label="Order Notes"></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Total Amount: <span id="orderTotal">NPR 0.00</span></label>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary" aria-label="Submit Purchase Order">Create Order</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Modal for viewing/editing order -->
+                <div class="modal" id="viewModal" role="dialog" aria-labelledby="viewModalTitle">
+                    <div class="view-modal-content">
+                        <span class="modal-close" onclick="closeViewModal()" aria-label="Close modal">×</span>
+                        <h2 id="viewModalTitle">Purchase Order Details</h2>
+                        <div id="viewModalContent" class="order-details">
+                            Loading order details...
+                        </div>
+                        <div id="editControls" style="margin-top: 20px; display: none;">
+                            <div style="margin-bottom: 15px;">
+                                <label for="newStatus"><strong>Update Order Status:</strong></label>
+                                <select id="newStatus" class="form-input" style="margin-top: 5px;" aria-label="Update Order Status">
+                                    <option value="Pending">Pending</option>
+                                    <option value="Processing">Processing</option>
+                                    <option value="Delivered">Delivered</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label for="newPaymentStatus"><strong>Update Payment Status:</strong></label>
+                                <select id="newPaymentStatus" class="form-input" style="margin-top: 5px;" aria-label="Update Payment Status">
+                                    <option value="Pending">Pending</option>
+                                    <option value="Partial">Partial</option>
+                                    <option value="Paid">Paid</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-primary" onclick="updateOrderStatus()" aria-label="Update Status">Update Status</button>
+                                <button class="btn btn-pdf" onclick="downloadOrderPDF()" aria-label="Download PDF">Download PDF</button>
+                                <button class="btn btn-secondary" onclick="closeViewModal()" aria-label="Cancel">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Firebase with your config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCmJl82VktcyAZQYsMc_0Rw-2MxRNPBVUw",
+            authDomain: "shop-mgt.firebaseapp.com",
+            databaseURL: "https://shop-mgt-default-rtdb.firebaseio.com",
+            projectId: "shop-mgt",
+            storageBucket: "shop-mgt.appspot.com",
+            messagingSenderId: "577237698646",
+            appId: "1:577237698646:web:185d0aeb482eb7b70713f7",
+            measurementId: "G-D5YTD5M9HB"
+        };
+
+        // Initialize Firebase
+        try {
+            firebase.initializeApp(firebaseConfig);
+            window.database = firebase.database();
+            console.log("Firebase initialized successfully");
+        } catch (error) {
+            console.error("Firebase initialization failed:", error);
+            showError("Failed to initialize database. Please check your internet connection.");
+        }
+
+        // Global variables
+        let currentEditingOrderId = null;
+        const { jsPDF } = window.jspdf;
+        
+        // False ceiling material categories and items
+        const itemCategories = {
+            "Ceiling Panels": ["Gypsum Board", "PVC Panel", "Metal Panel", "Mineral Fiber", "Wooden Panel"],
+            "Framework": ["Main Tee", "Wall Angle", "Cross Tee", "Hanger Wire", "Suspension Clip"],
+            "Insulation": ["Fiberglass", "Mineral Wool", "Foam Board", "Reflective Foil", "Acoustic Panel"],
+            "Lighting": ["Recessed Light", "LED Panel", "Track Light", "Spot Light", "Emergency Light"],
+            "Accessories": ["Joint Compound", "Screws", "Edge Trim", "Adhesive", "Paint"]
+        };
+        
+        // Error handling function
+        function showError(message) {
+            const errorElement = document.getElementById('databaseError');
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+                errorElement.setAttribute('aria-live', 'assertive');
+                setTimeout(() => {
+                    errorElement.style.display = 'none';
+                    errorElement.removeAttribute('aria-live');
+                }, 5000);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                // Initialize UI elements and event listeners
+                initializeUI();
+                
+                // Load purchase orders
+                loadPurchaseOrders();
+                
+                // Set up item category change listeners
+                setupItemCategoryListeners();
+                
+                // Set up amount calculation listeners
+                setupAmountCalculation();
+                
+            } catch (error) {
+                console.error("Initialization error:", error);
+                showError("Failed to initialize page: " + error.message);
+            }
+        });
+        
+        function initializeUI() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.querySelector('.sidebar-toggle');
+            
+            // Sidebar toggle
+            if (toggleButton && sidebar) {
+                toggleButton.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                });
+                // Close sidebar when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!sidebar.contains(e.target) && !toggleButton.contains(e.target)) {
+                        sidebar.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Set current date in order form
+            const orderDateInput = document.getElementById('orderDate');
+            if (orderDateInput) {
+                orderDateInput.value = new Date().toISOString().split('T')[0];
+            }
+            
+            // Search functionality
+            const searchInput = document.querySelector('.search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const rows = document.querySelectorAll('#purchaseTableBody tr');
+                    
+                    rows.forEach(row => {
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(searchTerm) ? '' : 'none';
+                    });
+                });
+            }
+        }
+        
+        function setupItemCategoryListeners() {
+            document.addEventListener('change', function(e) {
+                if (e.target && e.target.classList.contains('item-category')) {
+                    const category = e.target.value;
+                    const itemNameSelect = e.target.closest('.item-row').querySelector('.item-name');
+                    
+                    if (itemNameSelect) {
+                        // Clear existing options
+                        itemNameSelect.innerHTML = '<option value="">Select Material</option>';
+                        
+                        // Add new options based on category
+                        if (category && itemCategories[category]) {
+                            itemCategories[category].forEach(item => {
+                                const option = document.createElement('option');
+                                option.value = item;
+                                option.textContent = item;
+                                itemNameSelect.appendChild(option);
+                            });
+                        }
+                    }
+                }
+            });
+        }
+        
+        function setupAmountCalculation() {
+            document.addEventListener('input', function(e) {
+                if (e.target && (e.target.classList.contains('item-quantity') || 
+                    e.target.classList.contains('item-price'))) {
+                    calculateOrderTotal();
+                }
+            });
+        }
+        
+        function calculateOrderTotal() {
+            let total = 0;
+            const itemRows = document.querySelectorAll('#itemsContainer .item-row');
+            
+            itemRows.forEach(row => {
+                const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                total += quantity * price;
+            });
+            
+            document.getElementById('orderTotal').textContent = 'NPR ' + total.toFixed(2);
+        }
+        
+        function addItemRow() {
+            const itemsContainer = document.getElementById('itemsContainer');
+            if (itemsContainer) {
+                const newRow = document.createElement('div');
+                newRow.className = 'item-row';
+                newRow.innerHTML = `
+                    <select class="form-input item-category" required aria-label="Material Category">
+                        <option value="">Select Category</option>
+                        <option value="Ceiling Panels">Ceiling Panels</option>
+                        <option value="Framework">Framework</option>
+                        <option value="Insulation">Insulation</option>
+                        <option value="Lighting">Lighting</option>
+                        <option value="Accessories">Accessories</option>
+                    </select>
+                    <select class="form-input item-name" required aria-label="Material Name">
+                        <option value="">Select Material</option>
+                    </select>
+                    <input type="number" class="form-input item-quantity" placeholder="Qty" required aria-label="Quantity" min="1">
+                    <input type="number" class="form-input item-price" placeholder="Price (NPR)" required aria-label="Price" min="0" step="0.01">
+                    <button type="button" class="remove-item" onclick="removeItemRow(this)" aria-label="Remove Item">×</button>
+                `;
+                itemsContainer.appendChild(newRow);
+                calculateOrderTotal();
+            }
+        }
+        
+        function removeItemRow(button) {
+            const itemRow = button.closest('.item-row');
+            if (itemRow) {
+                const allRows = document.querySelectorAll('#itemsContainer .item-row');
+                if (allRows.length > 1) {
+                    itemRow.remove();
+                    calculateOrderTotal();
+                } else {
+                    showError("At least one material is required.");
+                }
+            }
+        }
+        
+        function loadPurchaseOrders() {
+            if (!window.database) {
+                showError("Database not initialized. Please check your connection.");
+                return;
+            }
+
+            const purchaseRef = window.database.ref('purchaseOrders');
+            purchaseRef.on('value', (snapshot) => {
+                try {
+                    const orders = snapshot.val();
+                    const tbody = document.getElementById('purchaseTableBody');
+                    const pendingOrdersElement = document.getElementById('pendingOrders');
+                    const monthlyTotalElement = document.getElementById('monthlyTotal');
+                    
+                    if (!tbody || !pendingOrdersElement || !monthlyTotalElement) {
+                        console.error("Required elements not found");
+                        return;
+                    }
+
+                    tbody.innerHTML = '';
+                    let pendingCount = 0;
+                    let monthlyTotal = 0;
+                    const currentMonth = new Date().getMonth();
+                    const currentYear = new Date().getFullYear();
+
+                    if (orders) {
+                        Object.entries(orders).forEach(([id, order]) => {
+                            if (order.status === 'Pending') pendingCount++;
+                            
+                            if (order.orderDate) {
+                                const orderDate = new Date(order.orderDate);
+                                if (orderDate.getMonth() === currentMonth && 
+                                    orderDate.getFullYear() === currentYear) {
+                                    monthlyTotal += order.amount || 0;
+                                }
+                            }
+                            
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${id}</td>
+                                <td>${order.supplier || 'N/A'}</td>
+                                <td>NPR ${order.amount ? order.amount.toFixed(2) : '0.00'}</td>
+                                <td>${order.orderDate || 'N/A'}</td>
+                                <td><span class="status-badge status-${order.status ? order.status.toLowerCase() : 'pending'}">${order.status || 'Pending'}</span></td>
+                                <td><span class="status-badge status-${order.paymentStatus ? order.paymentStatus.toLowerCase() : 'pending'}">${order.paymentStatus || 'Pending'}</span></td>
+                                <td>
+                                    <button class="btn btn-secondary" onclick="viewOrder('${id}')" aria-label="View Order ${id}">View</button>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No purchase orders found</td></tr>';
+                    }
+
+                    pendingOrdersElement.textContent = pendingCount;
+                    monthlyTotalElement.textContent = 'NPR ' + monthlyTotal.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    
+                    animateNumbers();
+                } catch (error) {
+                    console.error("Error loading purchase orders:", error);
+                    showError("Failed to load purchase orders: " + error.message);
+                }
+            }, (error) => {
+                console.error("Firebase onValue error:", error);
+                showError("Failed to fetch purchase orders: " + error.message);
+            });
+        }
+        
+        function animateNumbers() {
+            const numberElements = document.querySelectorAll('.card-value');
+            numberElements.forEach(element => {
+                const text = element.textContent;
+                const numberMatch = text.match(/\d+[\d,.]*/);
+                const number = numberMatch ? parseFloat(numberMatch[0].replace(/,/g, '')) : 0;
+                const prefix = text.replace(/[\d,.]/g, '');
+                
+                if (number > 0) {
+                    let current = 0;
+                    const increment = number / 50;
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= number) {
+                            current = number;
+                            clearInterval(timer);
+                        }
+                        
+                        if (prefix.includes('NPR')) {
+                            element.textContent = prefix + ' ' + current.toLocaleString('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                        } else {
+                            element.textContent = prefix + Math.floor(current).toLocaleString();
+                        }
+                    }, 30);
+                }
+            });
+        }
+        
+        function showCreateModal() {
+            const createModal = document.getElementById('createModal');
+            if (createModal) {
+                createModal.style.display = 'flex';
+                document.getElementById('purchaseForm').reset();
+                const itemsContainer = document.getElementById('itemsContainer');
+                itemsContainer.innerHTML = `
+                    <div class="item-row">
+                        <select class="form-input item-category" required aria-label="Material Category">
+                            <option value="">Select Category</option>
+                            <option value="Ceiling Panels">Ceiling Panels</option>
+                            <option value="Framework">Framework</option>
+                            <option value="Insulation">Insulation</option>
+                            <option value="Lighting">Lighting</option>
+                            <option value="Accessories">Accessories</option>
+                        </select>
+                        <select class="form-input item-name" required aria-label="Material Name">
+                            <option value="">Select Material</option>
+                        </select>
+                        <input type="number" class="form-input item-quantity" placeholder="Qty" required aria-label="Quantity" min="1">
+                        <input type="number" class="form-input item-price" placeholder="Price (NPR)" required aria-label="Price" min="0" step="0.01">
+                        <button type="button" class="remove-item" onclick="removeItemRow(this)" aria-label="Remove Item">×</button>
+                    </div>
+                `;
+                document.getElementById('orderDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('orderTotal').textContent = 'NPR 0.00';
+            }
+        }
+        
+        function closeCreateModal() {
+            const createModal = document.getElementById('createModal');
+            if (createModal) {
+                createModal.style.display = 'none';
+            }
+        }
+        
+        async function createPurchaseOrder(event) {
+            event.preventDefault();
+            if (!window.database) {
+                showError("Database not initialized. Please check your connection.");
+                return;
+            }
+
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            if (!submitButton) return;
+
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = '<span class="loading"></span> Creating...';
+            submitButton.disabled = true;
+
+            try {
+                const items = [];
+                const itemRows = document.querySelectorAll('#itemsContainer .item-row');
+                
+                itemRows.forEach(row => {
+                    items.push({
+                        category: row.querySelector('.item-category').value,
+                        name: row.querySelector('.item-name').value,
+                        quantity: parseFloat(row.querySelector('.item-quantity').value) || 0,
+                        price: parseFloat(row.querySelector('.item-price').value) || 0
+                    });
+                });
+
+                if (items.some(item => !item.category || !item.name || item.quantity <= 0 || item.price <= 0)) {
+                    throw new Error("Please fill in all material details with valid values.");
+                }
+
+                const totalAmount = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+
+                const order = {
+                    supplier: document.getElementById('supplier').value.trim(),
+                    supplierContact: document.getElementById('supplierContact').value.trim(),
+                    location: document.getElementById('location').value.trim(),
+                    amount: totalAmount,
+                    orderDate: document.getElementById('orderDate').value,
+                    paymentStatus: document.getElementById('paymentStatus').value,
+                    status: document.getElementById('status').value,
+                    items: items,
+                    notes: document.getElementById('notes').value.trim(),
+                    createdAt: new Date().toISOString(),
+                    deliveredDate: null
+                };
+
+                if (!order.supplier || !order.orderDate) {
+                    throw new Error("Supplier name and order date are required.");
+                }
+
+                const purchaseRef = window.database.ref('purchaseOrders');
+                await purchaseRef.push(order);
+                
+                closeCreateModal();
+                loadPurchaseOrders();
+                
+                showError('Purchase order created successfully!');
+            } catch (error) {
+                console.error('Error creating purchase order:', error);
+                showError('Error: ' + error.message);
+            } finally {
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            }
+        }
+        
+        async function viewOrder(orderId) {
+            if (!window.database) {
+                showError("Database not initialized. Please check your connection.");
+                return;
+            }
+
+            try {
+                const orderRef = window.database.ref(`purchaseOrders/${orderId}`);
+                const snapshot = await orderRef.once('value');
+                const order = snapshot.val();
+                
+                if (order) {
+                    currentEditingOrderId = orderId;
+                    displayOrderDetails(orderId, order);
+                } else {
+                    showError('Order not found.');
+                }
+            } catch (error) {
+                console.error('Error viewing order:', error);
+                showError('Error viewing order: ' + error.message);
+            }
+        }
+        
+        function displayOrderDetails(orderId, order) {
+            const viewModal = document.getElementById('viewModal');
+            const viewModalTitle = document.getElementById('viewModalTitle');
+            const viewModalContent = document.getElementById('viewModalContent');
+            const editControls = document.getElementById('editControls');
+            
+            if (!viewModal || !viewModalTitle || !viewModalContent) return;
+            
+            viewModalTitle.textContent = `Purchase Order #${orderId}`;
+            
+            let html = `
+                <div><strong>Supplier:</strong> ${order.supplier || 'N/A'}</div>
+                <div><strong>Contact:</strong> ${order.supplierContact || 'N/A'}</div>
+                <div><strong>Location:</strong> ${order.location || 'N/A'}</div>
+                <div><strong>Order Date:</strong> ${order.orderDate || 'N/A'}</div>
+                <div><strong>Status:</strong> <span class="status-badge status-${order.status ? order.status.toLowerCase() : 'pending'}">${order.status || 'Pending'}</span></div>
+                <div><strong>Payment Status:</strong> <span class="status-badge status-${order.paymentStatus ? order.paymentStatus.toLowerCase() : 'pending'}">${order.paymentStatus || 'Pending'}</span></div>
+                <div><strong>Total Amount:</strong> NPR ${order.amount ? order.amount.toFixed(2) : '0.00'}</div>
+            `;
+            
+            if (order.deliveredDate) {
+                html += `<div><strong>Delivered Date:</strong> ${order.deliveredDate}</div>`;
+            }
+            
+            if (order.notes) {
+                html += `<div><strong>Notes:</strong> ${order.notes}</div>`;
+            }
+            
+            if (order.items && order.items.length > 0) {
+                html += `<div style="margin-top: 20px;"><strong>Materials:</strong></div>
+                <table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f5f5f5;">
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;" scope="col">Category</th>
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;" scope="col">Material</th>
+                            <th style="padding: 8px; text-align: right; border-bottom: 1px solid #ddd;" scope="col">Qty</th>
+                            <th style="padding: 8px; text-align: right; border-bottom: 1px solid #ddd;" scope="col">Price (NPR)</th>
+                            <th style="padding: 8px; text-align: right; border-bottom: 1px solid #ddd;" scope="col">Total (NPR)</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+                
+                order.items.forEach(item => {
+                    html += `
+                        <tr>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.category || 'N/A'}</td>
+                            <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.name || 'N/A'}</td>
+                            <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;">${item.quantity || '0'}</td>
+                            <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;">${item.price ? item.price.toFixed(2) : '0.00'}</td>
+                            <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;">${(item.quantity * item.price).toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `</tbody></table>`;
+            }
+            
+            if (order.status !== 'Delivered' && order.status !== 'Cancelled') {
+                // Set current values in dropdowns
+                const statusSelect = document.getElementById('newStatus');
+                const paymentStatusSelect = document.getElementById('newPaymentStatus');
+                
+                if (statusSelect) {
+                    statusSelect.value = order.status || 'Pending';
+                }
+                
+                if (paymentStatusSelect) {
+                    paymentStatusSelect.value = order.paymentStatus || 'Pending';
+                }
+                
+                editControls.style.display = 'block';
+            } else {
+                editControls.style.display = 'none';
+            }
+            
+            viewModalContent.innerHTML = html;
+            viewModal.style.display = 'flex';
+        }
+        
+        function closeViewModal() {
+            const viewModal = document.getElementById('viewModal');
+            if (viewModal) {
+                viewModal.style.display = 'none';
+                currentEditingOrderId = null;
+            }
+        }
+        
+        async function updateOrderStatus() {
+            if (!currentEditingOrderId || !window.database) {
+                showError("Unable to update order. Please try again.");
+                return;
+            }
+
+            try {
+                const newStatus = document.getElementById('newStatus').value;
+                const newPaymentStatus = document.getElementById('newPaymentStatus').value;
+                
+                if (!newStatus || !newPaymentStatus) {
+                    showError("Please select valid status values.");
+                    return;
+                }
+
+                const updates = {
+                    status: newStatus,
+                    paymentStatus: newPaymentStatus
+                };
+
+                if (newStatus === 'Delivered') {
+                    updates.deliveredDate = new Date().toISOString().split('T')[0];
+                }
+
+                const orderRef = window.database.ref(`purchaseOrders/${currentEditingOrderId}`);
+                await orderRef.update(updates);
+                
+                const snapshot = await orderRef.once('value');
+                const updatedOrder = snapshot.val();
+                displayOrderDetails(currentEditingOrderId, updatedOrder);
+                
+                loadPurchaseOrders();
+                
+                showError('Order status updated successfully!');
+            } catch (error) {
+                console.error('Error updating order status:', error);
+                showError('Error updating order: ' + error.message);
+            }
+        }
+        
+        async function downloadOrderPDF() {
+            if (!currentEditingOrderId || !window.database) {
+                showError("Unable to generate PDF. Please try again.");
+                return;
+            }
+
+            try {
+                const orderRef = window.database.ref(`purchaseOrders/${currentEditingOrderId}`);
+                const snapshot = await orderRef.once('value');
+                const order = snapshot.val();
+                
+                if (!order) {
+                    showError("Order not found for PDF generation.");
+                    return;
+                }
+
+                // Create a new PDF document
+                const doc = new jsPDF();
+                
+                // Add company logo and header
+                doc.setFontSize(18);
+                doc.setTextColor(40, 53, 147);
+                doc.text('False Ceiling Pro', 105, 20, { align: 'center' });
+                doc.setFontSize(14);
+                doc.setTextColor(0, 0, 0);
+                doc.text('Purchase Order', 105, 30, { align: 'center' });
+                
+                // Add order details
+                doc.setFontSize(12);
+                doc.text(`Order ID: ${currentEditingOrderId}`, 14, 45);
+                doc.text(`Supplier: ${order.supplier || 'N/A'}`, 14, 55);
+                doc.text(`Contact: ${order.supplierContact || 'N/A'}`, 14, 65);
+                doc.text(`Order Date: ${order.orderDate || 'N/A'}`, 14, 75);
+                doc.text(`Status: ${order.status || 'Pending'}`, 14, 85);
+                doc.text(`Payment: ${order.paymentStatus || 'Pending'}`, 14, 95);
+                
+                // Add materials table
+                if (order.items && order.items.length > 0) {
+                    doc.text('Materials:', 14, 110);
+                    
+                    const headers = [['Category', 'Material', 'Qty', 'Price (NPR)', 'Total (NPR)']];
+                    const data = order.items.map(item => [
+                        item.category || 'N/A',
+                        item.name || 'N/A',
+                        item.quantity || '0',
+                        item.price ? item.price.toFixed(2) : '0.00',
+                        (item.quantity * item.price).toFixed(2)
+                    ]);
+                    
+                    doc.autoTable({
+                        startY: 115,
+                        head: headers,
+                        body: data,
+                        theme: 'grid',
+                        headStyles: {
+                            fillColor: [102, 126, 234],
+                            textColor: 255
+                        },
+                        styles: {
+                            cellPadding: 3,
+                            fontSize: 10
+                        }
+                    });
+                }
+                
+                // Add total amount
+                const finalY = doc.lastAutoTable.finalY || 120;
+                doc.setFontSize(12);
+                doc.setTextColor(0, 0, 0);
+                doc.text(`Total Amount: NPR ${order.amount ? order.amount.toFixed(2) : '0.00'}`, 14, finalY + 15);
+                
+                // Add notes if available
+                if (order.notes) {
+                    doc.text(`Notes: ${order.notes}`, 14, finalY + 25);
+                }
+                
+                // Add footer
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text('Generated by False Ceiling Pro - ' + new Date().toLocaleDateString(), 105, 285, { align: 'center' });
+                
+                // Save the PDF
+                doc.save(`PurchaseOrder_${currentEditingOrderId}.pdf`);
+                
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                showError('Error generating PDF: ' + error.message);
+            }
+        }
+        
+        async function downloadAllOrdersPDF() {
+            if (!window.database) {
+                showError("Database not initialized. Please check your connection.");
+                return;
+            }
+
+            try {
+                const purchaseRef = window.database.ref('purchaseOrders');
+                const snapshot = await purchaseRef.once('value');
+                const orders = snapshot.val();
+                
+                if (!orders) {
+                    showError("No orders found for PDF generation.");
+                    return;
+                }
+
+                // Create a new PDF document
+                const doc = new jsPDF();
+                
+                // Add company logo and header
+                doc.setFontSize(18);
+                doc.setTextColor(40, 53, 147);
+                doc.text('False Ceiling Pro', 105, 20, { align: 'center' });
+                doc.setFontSize(14);
+                doc.setTextColor(0, 0, 0);
+                doc.text('All Purchase Orders', 105, 30, { align: 'center' });
+                doc.setFontSize(10);
+                doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 35, { align: 'center' });
+                
+                // Prepare data for the table
+                const headers = [['Order ID', 'Supplier', 'Amount (NPR)', 'Order Date', 'Status', 'Payment']];
+                const data = Object.entries(orders).map(([id, order]) => [
+                    id,
+                    order.supplier || 'N/A',
+                    order.amount ? order.amount.toFixed(2) : '0.00',
+                    order.orderDate || 'N/A',
+                    order.status || 'Pending',
+                    order.paymentStatus || 'Pending'
+                ]);
+                
+                // Add orders table
+                doc.autoTable({
+                    startY: 45,
+                    head: headers,
+                    body: data,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [102, 126, 234],
+                        textColor: 255
+                    },
+                    styles: {
+                        cellPadding: 3,
+                        fontSize: 8
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 25 },
+                        1: { cellWidth: 40 },
+                        2: { cellWidth: 25 },
+                        3: { cellWidth: 25 },
+                        4: { cellWidth: 25 },
+                        5: { cellWidth: 25 }
+                    }
+                });
+                
+                // Calculate totals
+                const totalAmount = Object.values(orders).reduce((sum, order) => sum + (order.amount || 0), 0);
+                const pendingCount = Object.values(orders).filter(order => order.status === 'Pending').length;
+                
+                // Add summary
+                const finalY = doc.lastAutoTable.finalY || 50;
+                doc.setFontSize(12);
+                doc.text(`Total Orders: ${Object.keys(orders).length}`, 14, finalY + 15);
+                doc.text(`Pending Orders: ${pendingCount}`, 14, finalY + 25);
+                doc.text(`Total Amount: NPR ${totalAmount.toFixed(2)}`, 14, finalY + 35);
+                
+                // Add footer
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text('Generated by False Ceiling Pro - ' + new Date().toLocaleDateString(), 105, 285, { align: 'center' });
+                
+                // Save the PDF
+                doc.save('AllPurchaseOrders.pdf');
+                
+            } catch (error) {
+                console.error('Error generating all orders PDF:', error);
+                showError('Error generating PDF: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

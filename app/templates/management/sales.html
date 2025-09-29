@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Management</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
+    <!-- jsPDF and autoTable for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-bottom: 1rem;
+        }
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-link:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+        .nav-link:hover:before {
+            left: 100%;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(8px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            opacity: 0.8;
+        }
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            transition: margin-left 0.3s ease;
+        }
+        .page {
+            animation: fadeInUp 0.6s ease;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+        }
+        .page-subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+            margin: 0;
+            flex-basis: 100%;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        .btn-pdf {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: 2px solid #ff6b6b;
+        }
+        .btn-pdf:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #ee5a24, #ff6b6b);
+            box-shadow: 0 8px 25px rgba(238, 90, 36, 0.4);
+            border-color: #ee5a24;
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            background: #667eea;
+            color: white;
+        }
+        .btn-info {
+             background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* Blue */
+             color: white;
+             border: 2px solid #3b82f6;
+        }
+        .btn-info:hover {
+             transform: translateY(-2px);
+             background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+             border-color: #1d4ed8;
+        }
+        .btn-success {
+             background: linear-gradient(135deg, #10b981, #059669); /* Green */
+             color: white;
+             border: 2px solid #10b981;
+        }
+        .btn-success:hover {
+             transform: translateY(-2px);
+             background: linear-gradient(135deg, #059669, #10b981);
+             border-color: #059669;
+        }
+        .btn-danger {
+             background: linear-gradient(135deg, #ef4444, #dc2626); /* Red */
+             color: white;
+             border: 2px solid #ef4444;
+        }
+        .btn-danger:hover {
+             transform: translateY(-2px);
+             background: linear-gradient(135deg, #dc2626, #ef4444);
+             border-color: #dc2626;
+        }
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-x: auto; /* Essential for horizontal scrolling on small screens */
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            /* min-width ensures it can shrink but provides a base */
+            min-width: 600px; /* Adjusted for better mobile fit */
+        }
+        .table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
+            /* Prevent headers from wrapping unnecessarily */
+            white-space: nowrap;
+        }
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        .table tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .controls > * {
+            flex: 1;
+            min-width: 200px; /* Ensure controls don't get too small */
+        }
+        .cards-grid {
+            display: grid;
+            /* Use minmax to allow cards to shrink on smaller screens */
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem; /* Reduced gap for smaller screens */
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 1rem; /* Reduced padding */
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        .card:hover:before {
+            transform: scaleX(1);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem; /* Reduced margin */
+        }
+        .card-icon {
+            width: 35px; /* Smaller icon */
+            height: 35px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px; /* Smaller radius */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.75rem; /* Reduced margin */
+            color: white;
+            font-size: 1rem; /* Smaller font size */
+        }
+        .card-title {
+            font-size: 1rem; /* Smaller title */
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .card-value {
+            font-size: 1.5rem; /* Smaller value */
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        .card-description {
+            color: #6b7280;
+            font-size: 0.8rem; /* Smaller description */
+        }
+        .status-badge {
+            padding: 4px 8px; /* Reduced padding */
+            border-radius: 4px;
+            font-size: 0.75rem; /* Smaller font size */
+            font-weight: 600;
+        }
+        .status-paid, .status-completed {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .status-partial, .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .status-pending-only {
+             background-color: #fee2e2;
+             color: #991c1c;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1002;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .connection-status {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: #dc2626;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            z-index: 1001;
+            display: none;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .action-buttons {
+             display: flex;
+             gap: 0.5rem;
+             flex-wrap: wrap;
+             justify-content: center; /* Center buttons if they wrap */
+        }
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 1.5rem; /* Reduced padding */
+            border-radius: 12px;
+            width: 95%; /* Wider on small screens */
+            max-width: 500px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem; /* Reduced margin */
+        }
+        .modal-title {
+            font-size: 1.25rem; /* Smaller title */
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #374151;
+        }
+        /* Specific adjustments for modals on small screens */
+        @media (max-width: 480px) {
+            .modal-content {
+                padding: 1rem;
+                width: 98%;
+            }
+            .modal-title {
+                font-size: 1.1rem;
+            }
+            .form-input, .form-select {
+                padding: 10px 12px; /* Smaller input padding */
+                font-size: 0.9rem;
+            }
+            .btn {
+                padding: 10px 16px; /* Smaller button padding */
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Main responsive breakpoint */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .sidebar-toggle {
+                display: block;
+            }
+            .page-header {
+                 flex-direction: column;
+                 align-items: stretch;
+            }
+            /* Stack controls vertically on smaller screens */
+            .controls {
+                 flex-direction: column;
+            }
+            /* Allow controls to take full width */
+            .controls > * {
+                 min-width: 100%;
+            }
+            /* Stack cards */
+            .cards-grid {
+                 grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Even smaller min width */
+                 gap: 0.75rem;
+            }
+            .card {
+                 padding: 0.75rem;
+            }
+            .card-header {
+                 margin-bottom: 0.5rem;
+            }
+            .card-icon {
+                 width: 30px;
+                 height: 30px;
+                 font-size: 0.9rem;
+            }
+            .card-title {
+                 font-size: 0.9rem;
+            }
+            .card-value {
+                 font-size: 1.25rem;
+            }
+            .card-description {
+                 font-size: 0.75rem;
+            }
+            /* Adjust table and its container for better mobile fit */
+            .table-container {
+                 padding: 1rem;
+            }
+            .table {
+                 font-size: 0.8rem; /* Smaller font size for table */
+                 min-width: 500px; /* Adjust min-width if needed */
+            }
+            .table th, .table td {
+                 padding: 0.5rem; /* Reduce padding */
+            }
+            /* Stack action buttons vertically on small screens within the table */
+            .action-buttons {
+                 flex-direction: column;
+                 align-items: flex-start;
+            }
+            .action-buttons .btn {
+                 width: 100%; /* Make buttons full width */
+                 justify-content: center;
+                 margin-bottom: 0.25rem; /* Add space between stacked buttons */
+            }
+            /* Reduce padding in status badges */
+            .status-badge {
+                 padding: 2px 6px;
+                 font-size: 0.7rem;
+            }
+        }
+         @media (max-width: 480px) {
+             .table {
+                 min-width: 400px; /* Further reduce if necessary */
+                 font-size: 0.7rem;
+             }
+             .table th, .table td {
+                  padding: 0.4rem;
+             }
+             .page-title {
+                 font-size: 2rem; /* Smaller title */
+             }
+             .page-subtitle {
+                 font-size: 1rem; /* Smaller subtitle */
+             }
+         }
+    </style>
+</head>
+<body>
+    <button class="sidebar-toggle" aria-label="Toggle Sidebar">☰</button>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Business Pro</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link" aria-label="Home">
+                        <span class="nav-icon">🏠</span>
+                        Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link" aria-label="Dashboard">
+                        <span class="nav-icon">📊</span>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="inventory.html" class="nav-link" aria-label="Inventory">
+                        <span class="nav-icon">📦</span>
+                        Inventory
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="invoice.html" class="nav-link" aria-label="Invoice and Billing">
+                        <span class="nav-icon">📄</span>
+                        Invoice & Billing
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="sales.html" class="nav-link active" aria-label="Sales">
+                        <span class="nav-icon">💰</span>
+                        Sales
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="customers.html" class="nav-link" aria-label="Customers">
+                        <span class="nav-icon">👥</span>
+                        Customers
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link" aria-label="Employees">
+                        <span class="nav-icon">👤</span>
+                        Employees
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="purchase.html" class="nav-link" aria-label="Purchase">
+                        <span class="nav-icon">🛒</span>
+                        Purchase
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="expense.html" class="nav-link" aria-label="Expense">
+                        <span class="nav-icon">💸</span>
+                        Expense
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="tasks.html" class="nav-link" aria-label="Task Assignment">
+                        <span class="nav-icon">✅</span>
+                        Task Assignment
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="payments.html" class="nav-link" aria-label="Payment Track">
+                        <span class="nav-icon">💳</span>
+                        Payment Track
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="website.html" class="nav-link" aria-label="Website Management">
+                        <span class="nav-icon">🌐</span>
+                        Website Management
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="ledger.html" class="nav-link" aria-label="Ledger">
+                        <span class="nav-icon">📚</span>
+                        Ledger
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.html" class="nav-link" aria-label="Settings">
+                        <span class="nav-icon">⚙️</span>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="main-content">
+            <div class="page">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Sales Management</h1>
+                        <p class="page-subtitle">Track your sales performance and customer transactions</p>
+                    </div>
+                    <button class="btn btn-pdf" id="downloadPdfBtn" aria-label="Download Sales Report as PDF">
+                        📄 Download PDF
+                    </button>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">₨</div>
+                            <div class="card-title">Today's Sales</div>
+                        </div>
+                        <div class="card-value" id="todaysSales">₨0.00</div>
+                        <div class="card-description">Sales made today</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📅</div>
+                            <div class="card-title">Yesterday's Sales</div>
+                        </div>
+                        <div class="card-value" id="yesterdaysSales">₨0.00</div>
+                        <div class="card-description">Sales made yesterday</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">🗓️</div>
+                            <div class="card-title">This Week</div>
+                        </div>
+                        <div class="card-value" id="thisWeekSales">₨0.00</div>
+                        <div class="card-description">Sales this week</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">💰</div>
+                            <div class="card-title">Total Sales</div>
+                        </div>
+                        <div class="card-value" id="totalSales">₨0.00</div>
+                        <div class="card-description">All time sales</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                   <div class="controls">
+                        <input type="text" class="search-input" id="customerSearch" placeholder="Search by customer name...">
+                        <select class="form-select" id="dateRangeFilter">
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
+                            <option value="thisWeek">This Week</option>
+                            <option value="thisMonth">This Month</option>
+                        </select>
+                        <select class="form-select" id="paymentStatusFilter">
+                            <option value="all">All Payment Statuses</option>
+                            <option value="paid">Paid</option>
+                            <option value="partial">Partial</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Customer Name</th>
+                                <th>Address</th>
+                                <th>Phone</th>
+                                <th>Grand Total (NPR)</th>
+                                <th>Amount Paid (NPR)</th>
+                                <th>Balance Due (NPR)</th>
+                                <th>Payment Status</th>
+                                <th>Last Invoice Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesTableBody">
+                            <tr><td colspan="9" style="text-align: center;">Loading sales data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Payment Modal -->
+    <div class="modal" id="updatePaymentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Update Customer Payment</h2>
+                <button class="close-btn" onclick="closeModal('updatePaymentModal')">&times;</button>
+            </div>
+            <form id="updatePaymentForm">
+                <input type="hidden" id="updateCustomerKey">
+                <div class="form-group">
+                    <label class="form-label" for="updateCustomerName">Customer Name</label>
+                    <input type="text" class="form-input" id="updateCustomerName" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="updateCustomerPhone">Customer Phone</label>
+                    <input type="text" class="form-input" id="updateCustomerPhone" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="updateGrandTotal">Grand Total (NPR)</label>
+                    <input type="text" class="form-input" id="updateGrandTotal" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="updateAmountPaid">Amount Paid (NPR)</label>
+                    <input type="number" step="0.01" class="form-input" id="updateAmountPaid" required min="0">
+                </div>
+                 <div class="form-group">
+                    <label class="form-label" for="updateBalanceDue">Balance Due (NPR)</label>
+                    <input type="text" class="form-input" id="updateBalanceDue" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="updatePaymentStatus">Payment Status</label>
+                    <select class="form-select" id="updatePaymentStatus" required>
+                        <option value="Pending">Pending</option>
+                        <option value="Partial">Partial</option>
+                        <option value="Paid">Paid</option>
+                    </select>
+                </div>
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('updatePaymentModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="updatePaymentSubmitBtn">Update Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Invoices Modal -->
+    <div class="modal" id="viewInvoicesModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Invoices for <span id="viewCustomerName"></span></h2>
+                <button class="close-btn" onclick="closeModal('viewInvoicesModal')">&times;</button>
+            </div>
+            <div class="table-container" style="padding: 0; box-shadow: none; border: none;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Date</th>
+                            <th>Grand Total (NPR)</th>
+                            <th>Amount Paid (NPR)</th>
+                            <th>Balance Due (NPR)</th>
+                            <th>Payment Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoicesDetailTableBody">
+                        <!-- Invoice details will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="action-buttons" style="margin-top: 1rem;">
+                 <button class="btn btn-secondary" onclick="closeModal('viewInvoicesModal')">Close</button>
+                 <button class="btn btn-primary" onclick="goToInvoicePage()">Go to Invoice Page</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="connection-status" id="connectionStatus">Database connection lost. Retrying...</div>
+
+    <script>
+        // --- Firebase Configuration ---
+        const firebaseConfig = {
+             apiKey: "AIzaSyCmJl82VktcyAZQYsMc_0Rw-2MxRNPBVUw",
+            authDomain: "shop-mgt.firebaseapp.com",
+            projectId: "shop-mgt",
+            storageBucket: "shop-mgt.appspot.com",
+            messagingSenderId: "577237698646",
+            appId: "1:577237698646:web:185d0aeb482eb7b70713f7",
+            measurementId: "G-D5YTD5M9HB",
+            databaseURL: "https://shop-mgt-default-rtdb.firebaseio.com/"
+        };
+
+
+        // Initialize Firebase
+        let database, invoicesRef;
+        let allInvoicesData = {};
+        let displayedSalesData = [];
+
+        try {
+            const app = firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            invoicesRef = database.ref('invoices');
+            console.log("Firebase initialized successfully for Sales");
+
+            database.ref('.info/connected').on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    console.log("Connected to Firebase (Sales)");
+                    hideConnectionError();
+                    loadInvoiceData();
+                } else {
+                    console.log("Not connected to Firebase (Sales)");
+                    showConnectionError();
+                }
+            });
+        } catch (err) {
+            console.error("Firebase initialization error (Sales):", err);
+            showConnectionError();
+            alert("Failed to initialize Firebase for Sales. Please check your configuration.");
+        }
+
+        // --- DOM Ready ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.querySelector('.sidebar-toggle');
+
+            toggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+
+            document.getElementById('customerSearch').addEventListener('input', applyFilters);
+            document.getElementById('dateRangeFilter').addEventListener('change', applyFilters);
+            document.getElementById('paymentStatusFilter').addEventListener('change', applyFilters);
+            document.getElementById('downloadPdfBtn').addEventListener('click', downloadSalesReportPDF);
+            document.getElementById('updatePaymentForm').addEventListener('submit', function(e) {
+                 e.preventDefault();
+                 updateCustomerPayment();
+            });
+        });
+
+        // --- Data Loading ---
+        function loadInvoiceData() {
+            if (!invoicesRef) {
+                console.error("Invoices reference not initialized.");
+                return;
+            }
+            invoicesRef.on('value', (snapshot) => {
+                allInvoicesData = snapshot.val() || {};
+                console.log("Invoices loaded for sales:", Object.keys(allInvoicesData).length);
+                processAndDisplaySalesData();
+                hideConnectionError();
+            }, (err) => {
+                console.error('Error loading invoices for sales:', err);
+                showConnectionError();
+            });
+        }
+
+        // --- Data Processing and Display ---
+        function processAndDisplaySalesData(filteredInvoices = null) {
+            const dataToProcess = filteredInvoices || allInvoicesData;
+            const aggregatedSales = {};
+
+            if (!dataToProcess || Object.keys(dataToProcess).length === 0) {
+                console.log("No invoices found to process.");
+                populateSalesTable([]);
+                updateSummaryStats([]);
+                return;
+            }
+
+            Object.entries(dataToProcess).forEach(([invoiceId, invoice]) => {
+                if (!invoice.customerName || !invoice.customerPhone) {
+                    console.warn(`Skipping invoice ${invoiceId} due to missing customer info.`);
+                    return;
+                }
+
+                const key = `${invoice.customerName}|${invoice.customerPhone}`;
+                const invoiceDate = invoice.invoiceDate ? new Date(invoice.invoiceDate) : new Date(0);
+
+                if (!aggregatedSales[key]) {
+                    aggregatedSales[key] = {
+                        customerKey: key,
+                        customerName: invoice.customerName,
+                        customerPhone: invoice.customerPhone,
+                        customerAddress: invoice.customerAddress || 'N/A',
+                        grandTotal: 0,
+                        amountPaid: 0,
+                        lastInvoiceDate: invoiceDate,
+                        invoiceIds: [],
+                        invoicesDetail: []
+                    };
+                }
+
+                const customer = aggregatedSales[key];
+                customer.invoiceIds.push(invoiceId);
+
+                let invoiceGrandTotal = 0;
+                let invoiceAmountPaid = 0;
+                if (invoice.grandTotal) {
+                    invoiceGrandTotal = parseFloat(invoice.grandTotal.replace(/[₨₹,]/g, '')) || 0;
+                }
+                if (invoice.amountPaid !== undefined) {
+                     invoiceAmountPaid = parseFloat(invoice.amountPaid) || 0;
+                }
+
+                customer.grandTotal += invoiceGrandTotal;
+                customer.amountPaid += invoiceAmountPaid;
+
+                const invoiceBalanceDue = invoiceGrandTotal - invoiceAmountPaid;
+                const invoicePaymentStatus = determinePaymentStatus(invoiceBalanceDue, invoiceGrandTotal);
+                customer.invoicesDetail.push({
+                     id: invoice.invoiceNumber || invoiceId,
+                     date: formatDate(invoiceDate),
+                     grandTotal: invoiceGrandTotal,
+                     amountPaid: invoiceAmountPaid,
+                     balanceDue: invoiceBalanceDue,
+                     paymentStatus: invoicePaymentStatus,
+                     paymentStatusClass: getPaymentStatusClass(invoicePaymentStatus)
+                });
+
+                if (invoiceDate > customer.lastInvoiceDate) {
+                    customer.lastInvoiceDate = invoiceDate;
+                }
+            });
+
+            const processedSalesArray = Object.values(aggregatedSales).map(customer => {
+                customer.balanceDue = customer.grandTotal - customer.amountPaid;
+                customer.paymentStatus = determinePaymentStatus(customer.balanceDue, customer.grandTotal);
+                customer.paymentStatusClass = getPaymentStatusClass(customer.paymentStatus);
+                customer.formattedLastInvoiceDate = formatDate(customer.lastInvoiceDate);
+                customer.formattedGrandTotal = formatCurrency(customer.grandTotal);
+                customer.formattedAmountPaid = formatCurrency(customer.amountPaid);
+                customer.formattedBalanceDue = formatCurrency(customer.balanceDue);
+                return customer;
+            });
+
+            console.log("Processed sales ", processedSalesArray);
+            displayedSalesData = processedSalesArray;
+            populateSalesTable(processedSalesArray);
+            updateSummaryStats(processedSalesArray);
+        }
+
+
+        function determinePaymentStatus(balanceDue, grandTotal) {
+            if (balanceDue <= 0 && grandTotal > 0) return 'Paid';
+            if (balanceDue > 0 && grandTotal > 0) {
+                if (grandTotal > balanceDue) return 'Partial';
+                if (grandTotal === balanceDue) return 'Pending';
+            }
+            if(grandTotal > 0 && balanceDue > 0 && balanceDue === grandTotal) return 'Pending';
+            return 'N/A';
+        }
+
+        function getPaymentStatusClass(paymentStatus) {
+            switch(paymentStatus.toLowerCase()) {
+                case 'paid': return 'paid';
+                case 'partial': return 'partial';
+                case 'pending': return 'pending';
+                default: return 'pending';
+            }
+        }
+
+        // --- Filtering ---
+        function applyFilters() {
+             const searchTerm = document.getElementById('customerSearch').value.toLowerCase().trim();
+             const dateRangeFilter = document.getElementById('dateRangeFilter').value;
+             const paymentStatusFilter = document.getElementById('paymentStatusFilter').value;
+
+             let filteredInvoices = {};
+
+             Object.entries(allInvoicesData).forEach(([invoiceId, invoice]) => {
+                 if (!invoice.customerName || !invoice.customerPhone) return;
+
+                 const invoiceDate = invoice.invoiceDate ? new Date(invoice.invoiceDate) : new Date(0);
+                 const today = new Date();
+                 today.setHours(0, 0, 0, 0);
+                 const yesterday = new Date(today);
+                 yesterday.setDate(yesterday.getDate() - 1);
+                 const startOfWeek = new Date(today);
+                 startOfWeek.setDate(today.getDate() - today.getDay());
+                 const endOfWeek = new Date(startOfWeek);
+                 endOfWeek.setDate(startOfWeek.getDate() + 6);
+                 const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                 const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+                 let dateMatch = true;
+                 switch(dateRangeFilter) {
+                     case 'today':
+                         dateMatch = isSameDay(invoiceDate, today);
+                         break;
+                     case 'yesterday':
+                         dateMatch = isSameDay(invoiceDate, yesterday);
+                         break;
+                     case 'thisWeek':
+                         dateMatch = invoiceDate >= startOfWeek && invoiceDate <= endOfWeek;
+                         break;
+                     case 'thisMonth':
+                         dateMatch = invoiceDate >= startOfMonth && invoiceDate <= endOfMonth;
+                         break;
+                     case 'all':
+                     default:
+                         dateMatch = true;
+                 }
+
+                 const searchMatch = !searchTerm || invoice.customerName.toLowerCase().includes(searchTerm);
+
+                 if (dateMatch && searchMatch) {
+                     filteredInvoices[invoiceId] = invoice;
+                 }
+             });
+
+             processAndDisplaySalesData(filteredInvoices);
+
+             // Apply payment status filter to the DOM rows after table is populated
+             if (paymentStatusFilter !== 'all') {
+                 const rows = document.querySelectorAll('#salesTableBody tr');
+                 rows.forEach(row => {
+                     if (row.querySelector('td[colspan]')) return; // Skip placeholder rows
+
+                     const statusCell = row.cells[6];
+                     const statusBadge = statusCell.querySelector('.status-badge');
+                     if (statusBadge) {
+                         const statusClass = statusBadge.classList.contains('status-paid') ? 'paid' :
+                                             statusBadge.classList.contains('status-partial') ? 'partial' :
+                                             statusBadge.classList.contains('status-pending') ? 'pending' : 'all';
+                         if (statusClass !== paymentStatusFilter) {
+                             row.style.display = 'none';
+                         } else {
+                             row.style.display = '';
+                         }
+                     }
+                 });
+             } else {
+                 const rows = document.querySelectorAll('#salesTableBody tr');
+                 rows.forEach(row => {
+                     if (!row.querySelector('td[colspan]')) {
+                        row.style.display = '';
+                     }
+                 });
+             }
+        }
+
+
+        // --- UI Population ---
+        function populateSalesTable(salesData) {
+            const tbody = document.getElementById('salesTableBody');
+            tbody.innerHTML = '';
+
+            if (salesData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">No sales data found matching your criteria.</td></tr>';
+                return;
+            }
+
+            salesData.forEach(customer => {
+                 const row = document.createElement('tr');
+                 row.innerHTML = `
+                     <td>${customer.customerName}</td>
+                     <td>${customer.customerAddress}</td>
+                     <td>${customer.customerPhone}</td>
+                     <td>${customer.formattedGrandTotal}</td>
+                     <td>${customer.formattedAmountPaid}</td>
+                     <td>${customer.formattedBalanceDue}</td>
+                     <td><span class="status-badge status-${customer.paymentStatusClass}">${customer.paymentStatus}</span></td>
+                     <td>${customer.formattedLastInvoiceDate}</td>
+                     <td class="action-buttons">
+                         <button class="btn btn-info" onclick="viewCustomerInvoices('${customer.customerKey}', '${encodeURIComponent(customer.customerName)}')">View</button>
+                         <button class="btn btn-success" onclick="openUpdatePaymentModal('${customer.customerKey}', '${encodeURIComponent(customer.customerName)}', '${customer.customerPhone}', ${customer.grandTotal}, ${customer.amountPaid})">Update</button>
+                     </td>
+                 `;
+                 tbody.appendChild(row);
+            });
+        }
+
+        // --- Summary Stats ---
+        function updateSummaryStats(salesData) {
+             let todaysSales = 0;
+             let yesterdaysSales = 0;
+             let thisWeekSales = 0;
+             let totalSales = 0;
+
+             const today = new Date();
+             today.setHours(0, 0, 0, 0);
+             const yesterday = new Date(today);
+             yesterday.setDate(yesterday.getDate() - 1);
+             const startOfWeek = new Date(today);
+             startOfWeek.setDate(today.getDate() - today.getDay());
+
+             Object.values(allInvoicesData).forEach(invoice => {
+                 if (invoice.grandTotal) {
+                     const amount = parseFloat(invoice.grandTotal.replace(/[₨₹,]/g, '')) || 0;
+                     const invoiceDate = invoice.invoiceDate ? new Date(invoice.invoiceDate) : new Date(0);
+                     invoiceDate.setHours(0, 0, 0, 0);
+
+                     totalSales += amount;
+                     if (isSameDay(invoiceDate, today)) {
+                         todaysSales += amount;
+                     }
+                     if (isSameDay(invoiceDate, yesterday)) {
+                         yesterdaysSales += amount;
+                     }
+                     if (invoiceDate >= startOfWeek) {
+                         thisWeekSales += amount;
+                     }
+                 }
+             });
+
+             document.getElementById('todaysSales').textContent = formatCurrency(todaysSales);
+             document.getElementById('yesterdaysSales').textContent = formatCurrency(yesterdaysSales);
+             document.getElementById('thisWeekSales').textContent = formatCurrency(thisWeekSales);
+             document.getElementById('totalSales').textContent = formatCurrency(totalSales);
+        }
+
+
+        // --- View and Update Actions ---
+        function viewCustomerInvoices(customerKey, customerName) {
+             const decodedName = decodeURIComponent(customerName);
+             document.getElementById('viewCustomerName').textContent = decodedName;
+
+             const tbody = document.getElementById('invoicesDetailTableBody');
+             tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Loading invoices...</td></tr>';
+
+             const customerData = displayedSalesData.find(c => c.customerKey === customerKey);
+             if (customerData && customerData.invoicesDetail) {
+                 tbody.innerHTML = '';
+                 if (customerData.invoicesDetail.length === 0) {
+                     tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No invoices found for this customer.</td></tr>';
+                     return;
+                 }
+                 customerData.invoicesDetail.forEach(inv => {
+                     const row = document.createElement('tr');
+                     row.innerHTML = `
+                         <td>${inv.id}</td>
+                         <td>${inv.date}</td>
+                         <td>${formatCurrency(inv.grandTotal)}</td>
+                         <td>${formatCurrency(inv.amountPaid)}</td>
+                         <td>${formatCurrency(inv.balanceDue)}</td>
+                         <td><span class="status-badge status-${inv.paymentStatusClass}">${inv.paymentStatus}</span></td>
+                     `;
+                     tbody.appendChild(row);
+                 });
+             } else {
+                 tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Customer invoice data not found.</td></tr>';
+             }
+             openModal('viewInvoicesModal');
+        }
+
+        function goToInvoicePage() {
+             closeModal('viewInvoicesModal');
+             window.location.href = 'invoice.html';
+        }
+
+        function openUpdatePaymentModal(customerKey, customerName, customerPhone, grandTotal, amountPaid) {
+             const decodedName = decodeURIComponent(customerName);
+             document.getElementById('updateCustomerKey').value = customerKey;
+             document.getElementById('updateCustomerName').value = decodedName;
+             document.getElementById('updateCustomerPhone').value = customerPhone;
+             document.getElementById('updateGrandTotal').value = formatCurrency(grandTotal);
+             document.getElementById('updateAmountPaid').value = amountPaid.toFixed(2);
+
+             const balanceDue = grandTotal - amountPaid;
+             document.getElementById('updateBalanceDue').value = formatCurrency(balanceDue);
+
+             let initialStatus = 'Pending';
+             if (balanceDue <= 0 && grandTotal > 0) {
+                 initialStatus = 'Paid';
+             } else if (amountPaid > 0 && balanceDue > 0) {
+                 initialStatus = 'Partial';
+             }
+             document.getElementById('updatePaymentStatus').value = initialStatus;
+
+             document.getElementById('updateAmountPaid').addEventListener('input', calculateBalanceAndStatusForModal);
+             openModal('updatePaymentModal');
+        }
+
+        function calculateBalanceAndStatusForModal() {
+             const grandTotalStr = document.getElementById('updateGrandTotal').value.replace(/[₨₹,]/g, '');
+             const amountPaidStr = document.getElementById('updateAmountPaid').value;
+             const grandTotal = parseFloat(grandTotalStr) || 0;
+             const amountPaid = parseFloat(amountPaidStr) || 0;
+
+             const balanceDue = grandTotal - amountPaid;
+             document.getElementById('updateBalanceDue').value = formatCurrency(balanceDue);
+
+             let status = 'Pending';
+             if (amountPaid >= grandTotal && grandTotal > 0) {
+                 status = 'Paid';
+             } else if (amountPaid > 0 && amountPaid < grandTotal) {
+                 status = 'Partial';
+             }
+             document.getElementById('updatePaymentStatus').value = status;
+        }
+
+        function updateCustomerPayment() {
+            const customerKey = document.getElementById('updateCustomerKey').value;
+            const newAmountPaid = parseFloat(document.getElementById('updateAmountPaid').value);
+            const selectedStatus = document.getElementById('updatePaymentStatus').value;
+
+            if (isNaN(newAmountPaid) || newAmountPaid < 0) {
+                 alert("Please enter a valid amount paid.");
+                 return;
+            }
+
+            const submitButton = document.getElementById('updatePaymentSubmitBtn');
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = '<span class="loading"></span> Updating...';
+            submitButton.disabled = true;
+
+            try {
+                const customerIndex = displayedSalesData.findIndex(c => c.customerKey === customerKey);
+                if (customerIndex === -1) {
+                    throw new Error("Customer data not found for update.");
+                }
+
+                const customer = displayedSalesData[customerIndex];
+                const grandTotal = customer.grandTotal;
+
+                let finalAmountPaid = newAmountPaid;
+                let finalBalanceDue;
+
+                if (selectedStatus === 'Paid') {
+                    finalAmountPaid = grandTotal;
+                    finalBalanceDue = 0;
+                } else {
+                    finalBalanceDue = grandTotal - finalAmountPaid;
+                    finalBalanceDue = Math.max(finalBalanceDue, 0);
+                }
+
+                customer.amountPaid = finalAmountPaid;
+                customer.balanceDue = finalBalanceDue;
+                customer.paymentStatus = selectedStatus;
+                customer.paymentStatusClass = getPaymentStatusClass(selectedStatus);
+
+                customer.formattedAmountPaid = formatCurrency(customer.amountPaid);
+                customer.formattedBalanceDue = formatCurrency(customer.balanceDue);
+
+                // Update the specific row in the table
+                const tableRows = document.querySelectorAll('#salesTableBody tr');
+                tableRows.forEach(row => {
+                    const nameCell = row.cells[0];
+                    const phoneCell = row.cells[2];
+                    if (nameCell && phoneCell &&
+                        nameCell.textContent === customer.customerName &&
+                        phoneCell.textContent === customer.customerPhone) {
+
+                        row.cells[4].textContent = customer.formattedAmountPaid;
+                        row.cells[5].textContent = customer.formattedBalanceDue;
+                        const statusCell = row.cells[6];
+                        const badge = statusCell.querySelector('.status-badge');
+                        if (badge) {
+                            badge.className = 'status-badge';
+                            badge.classList.add(`status-${customer.paymentStatusClass}`);
+                            badge.textContent = customer.paymentStatus;
+                        }
+                    }
+                });
+
+                updateSummaryStats(displayedSalesData);
+
+                console.log(`Customer payment display updated for key: ${customerKey}`);
+                alert("Customer payment information updated (display only in this demo).");
+                closeModal('updatePaymentModal');
+
+            } catch (error) {
+                console.error("Error updating customer payment:", error);
+                alert("Failed to update customer payment: " + error.message);
+                showConnectionError();
+            } finally {
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+                document.getElementById('updateAmountPaid').removeEventListener('input', calculateBalanceAndStatusForModal);
+            }
+        }
+
+
+        // --- PDF Generation ---
+        function downloadSalesReportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(18);
+            doc.text('Sales Report', 105, 20, null, null, 'center');
+
+            const reportDate = new Date().toLocaleDateString('en-IN');
+            doc.setFontSize(12);
+            doc.text(`Generated on: ${reportDate}`, 105, 30, null, null, 'center');
+
+             const table = document.querySelector('.table');
+             if (!table) {
+                 alert("Table not found for PDF generation.");
+                 return;
+             }
+             // Exclude the Actions column (last-child) and hidden rows
+             const headers = Array.from(table.querySelectorAll('thead th:not(:last-child)')).map(th => th.textContent);
+             const rows = table.querySelectorAll('tbody tr:not([style*="display: none"]):not([style*="text-align: center"])');
+
+             const tableData = [];
+             rows.forEach(row => {
+                 // Exclude the Actions cell (last-child)
+                 const rowData = Array.from(row.querySelectorAll('td:not(:last-child)')).map((cell, index) => {
+                     if (index === 6) { // Payment Status column
+                         const badge = cell.querySelector('.status-badge');
+                         return badge ? badge.textContent : cell.textContent;
+                     }
+                     return cell.textContent;
+                 });
+                 tableData.push(rowData);
+             });
+
+            doc.autoTable({
+                head: [headers],
+                body: tableData,
+                startY: 40,
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 2,
+                    overflow: 'linebreak'
+                },
+                columnStyles: {
+                    0: { cellWidth: 25 },
+                    1: { cellWidth: 30 },
+                    2: { cellWidth: 20 },
+                    3: { cellWidth: 20 },
+                    4: { cellWidth: 20 },
+                    5: { cellWidth: 20 },
+                    6: { cellWidth: 15 },
+                    7: { cellWidth: 20 }
+                },
+                headStyles: {
+                    fillColor: [102, 126, 234],
+                    textColor: 255
+                }
+            });
+
+            doc.save('sales_report.pdf');
+        }
+
+
+        // --- Utility Functions ---
+        function formatDate(dateObj) {
+            if (!dateObj || !(dateObj instanceof Date) || isNaN(dateObj)) return 'N/A';
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return dateObj.toLocaleDateString('en-IN', options);
+        }
+
+        function formatCurrency(amount) {
+            return `₨${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        function isSameDay(date1, date2) {
+             return date1.getDate() === date2.getDate() &&
+                    date1.getMonth() === date2.getMonth() &&
+                    date1.getFullYear() === date2.getFullYear();
+        }
+
+        function showConnectionError() {
+            document.getElementById('connectionStatus').style.display = 'block';
+        }
+
+        function hideConnectionError() {
+            document.getElementById('connectionStatus').style.display = 'none';
+        }
+
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+    </script>
+</body>
+</html>

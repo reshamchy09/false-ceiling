@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Management Dashboard</title>
+    {% load static %}
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .nav-link:hover:before {
+            left: 100%;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(8px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            opacity: 0.8;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            transition: margin-left 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1002;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .subscription-status {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: 600;
+            color: #374151;
+            z-index: 1001;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            font-size: 12px;
+        }
+
+        .subscription-active {
+            border-left: 4px solid #10b981;
+        }
+
+        .subscription-warning {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .subscription-expired {
+            border-left: 4px solid #ef4444;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            color: white;
+            font-size: 18px;
+        }
+
+        .redirect-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            color: #374151;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            min-width: 300px;
+        }
+
+        .redirect-message h3 {
+            margin-bottom: 15px;
+            color: #ef4444;
+        }
+
+        .redirect-message p {
+            margin-bottom: 20px;
+            color: #6b7280;
+        }
+
+        .countdown {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div>
+            <div class="loading"></div>
+            <div style="margin-top: 10px;">Checking subscription status...</div>
+        </div>
+    </div>
+
+    <button class="sidebar-toggle" aria-label="Toggle Sidebar">☰</button>
+    <div class="container">
+       <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2>Business Pro</h2>
+    </div>
+    <ul class="nav-menu">
+        <li class="nav-item">
+            <a href="{% url 'index' %}" class="nav-link" aria-label="Home">
+                <span class="nav-icon">🏠</span>
+                Home
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'admin_dashboard' %}" class="nav-link" aria-label="Dashboard">
+                <span class="nav-icon">📊</span>
+                Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'inventory' %}" class="nav-link" aria-label="Inventory">
+                <span class="nav-icon">📦</span>
+                Inventory
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'sales' %}" class="nav-link" aria-label="Sales">
+                <span class="nav-icon">💰</span>
+                Sales
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'customers' %}" class="nav-link" aria-label="Customers">
+                <span class="nav-icon">👥</span>
+                Customers
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'employees' %}" class="nav-link" aria-label="Employees">
+                <span class="nav-icon">👤</span>
+                Employees
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'invoice' %}" class="nav-link" aria-label="Invoice and Billing">
+                <span class="nav-icon">📄</span>
+                Invoice & Billing
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'purchase' %}" class="nav-link" aria-label="Purchase">
+                <span class="nav-icon">🛒</span>
+                Purchase
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'expense' %}" class="nav-link" aria-label="Expense">
+                <span class="nav-icon">💸</span>
+                Expense
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'tasks' %}" class="nav-link" aria-label="Task Assignment">
+                <span class="nav-icon">✅</span>
+                Task Assignment
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'payments' %}" class="nav-link" aria-label="Payment Track">
+                <span class="nav-icon">💳</span>
+                Payment Track
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'website' %}" class="nav-link" aria-label="Website Management">
+                <span class="nav-icon">🌐</span>
+                Website Management
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'ledger' %}" class="nav-link" aria-label="Ledger">
+                <span class="nav-icon">📚</span>
+                Ledger
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'subscription' %}" class="nav-link" aria-label="Subscription">
+                <span class="nav-icon">🧾</span>
+                Subscription
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'stockbook' %}" class="nav-link" aria-label="Stock Book">
+                <span class="nav-icon">📘</span>
+                Stock Book
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'attendance' %}" class="nav-link" aria-label="Attendance">
+                <span class="nav-icon">🕒</span>
+                Attendance
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{% url 'settings' %}" class="nav-link" aria-label="Settings">
+                <span class="nav-icon">⚙️</span>
+                Settings
+            </a>
+        </li>
+    </ul>
+</div>
+
+        <div class="main-content">
+            <h1>Welcome to Business Pro Dashboard</h1>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+      // Firebase Configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyCmJl82VktcyAZQYsMc_0Rw-2MxRNPBVUw",
+        authDomain: "shop-mgt.firebaseapp.com",
+        databaseURL: "https://shop-mgt-default-rtdb.firebaseio.com",
+        projectId: "shop-mgt",
+        storageBucket: "shop-mgt.appspot.com",
+        messagingSenderId: "577237698646",
+        appId: "1:577237698646:web:185d0aeb482eb7b70713f7",
+        measurementId: "G-D5YTD5M9HB"
+      };
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.database();
+      const auth = firebase.auth();
+
+      // User identifier for subscription check
+      const getUserId = () => {
+        return window.USER_ID || document.body.dataset.userId || 
+               (auth.currentUser ? auth.currentUser.email : null);
+      };
+
+      function hideLoadingOverlay() {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+          overlay.style.display = 'none';
+        }
+      }
+
+      function showSubscriptionStatus(status, expiry, daysLeft) {
+        const statusElement = document.createElement('div');
+        statusElement.className = 'subscription-status';
+        
+        let statusClass = '';
+        let statusText = '';
+        
+        if (status === 'approved') {
+          if (daysLeft > 7) {
+            statusClass = 'subscription-active';
+            statusText = `Subscription Active<br>Expires: ${expiry}<br>(${daysLeft} days left)`;
+          } else if (daysLeft > 0) {
+            statusClass = 'subscription-warning';
+            statusText = `Subscription Expiring Soon<br>Expires: ${expiry}<br>(${daysLeft} days left)`;
+          } else {
+            statusClass = 'subscription-expired';
+            statusText = `Subscription Expired<br>Expired on: ${expiry}`;
+          }
+        } else if (status === 'pending') {
+          statusClass = 'subscription-warning';
+          statusText = 'Subscription Pending Approval';
+        } else if (status === 'rejected') {
+          statusClass = 'subscription-expired';
+          statusText = 'Subscription Rejected';
+        } else {
+          statusClass = 'subscription-expired';
+          statusText = 'No Active Subscription';
+        }
+        
+        statusElement.className += ' ' + statusClass;
+        statusElement.innerHTML = statusText;
+        document.body.appendChild(statusElement);
+      }
+
+      function redirectToSubscription(reason, countdown = 5) {
+        hideLoadingOverlay();
+        
+        const redirectDiv = document.createElement('div');
+        redirectDiv.className = 'redirect-message';
+        
+        let title = '';
+        let message = '';
+        
+        switch(reason) {
+          case 'expired':
+            title = 'Subscription Expired';
+            message = 'Your subscription has expired. Redirecting to subscription page...';
+            break;
+          case 'rejected':
+            title = 'Subscription Rejected';
+            message = 'Your subscription request was rejected. Redirecting to subscription page...';
+            break;
+          case 'pending':
+            title = 'Subscription Pending';
+            message = 'Your subscription is pending approval. Redirecting to subscription page...';
+            break;
+          case 'none':
+            title = 'No Subscription';
+            message = 'You need an active subscription to access this dashboard. Redirecting...';
+            break;
+          default:
+            title = 'Subscription Required';
+            message = 'Redirecting to subscription page...';
+        }
+        
+        redirectDiv.innerHTML = `
+          <h3>${title}</h3>
+          <p>${message}</p>
+          <div class="countdown">Redirecting in <span id="countdown">${countdown}</span> seconds</div>
+          <button onclick="redirectNow()" style="margin-top: 15px; padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            Go Now
+          </button>
+        `;
+        
+        document.body.appendChild(redirectDiv);
+        
+        // Countdown timer
+        const countdownElement = document.getElementById('countdown');
+        const timer = setInterval(() => {
+          countdown--;
+          if (countdownElement) {
+            countdownElement.textContent = countdown;
+          }
+          
+          if (countdown <= 0) {
+            clearInterval(timer);
+            redirectNow();
+          }
+        }, 1000);
+        
+        // Store the timer ID to clear it if user clicks "Go Now"
+        window.redirectTimer = timer;
+      }
+
+      function redirectNow() {
+        if (window.redirectTimer) {
+          clearInterval(window.redirectTimer);
+        }
+        
+        // Try different possible subscription page URLs
+        const possibleUrls = [
+          '{% url "subscription" %}',
+         
+        ];
+        
+        // Use the first URL (you can modify this based on your actual URL structure)
+        window.location.href = possibleUrls[0];
+      }
+
+      function checkSubscriptionStatus(userId) {
+        console.log('Checking subscription for user:', userId);
+        
+        // Query all subscriptions to find user's approved subscription
+        db.ref('subscriptions').orderByChild('userId').equalTo(userId).once('value')
+          .then(snapshot => {
+            console.log('Subscription query result:', snapshot.val());
+            
+            let activeSubscription = null;
+            let latestSubscription = null;
+            const now = new Date();
+            
+            // Find the active subscription or latest subscription
+            snapshot.forEach(child => {
+              const subscription = child.val();
+              console.log('Found subscription:', subscription);
+              
+              if (!latestSubscription || new Date(subscription.submittedAt) > new Date(latestSubscription.submittedAt)) {
+                latestSubscription = subscription;
+              }
+              
+              if (subscription.status === 'approved') {
+                const expiryDate = new Date(subscription.expiry);
+                if (expiryDate > now) {
+                  if (!activeSubscription || expiryDate > new Date(activeSubscription.expiry)) {
+                    activeSubscription = subscription;
+                  }
+                }
+              }
+            });
+            
+            if (activeSubscription) {
+              // User has active subscription - allow access
+              const expiryDate = new Date(activeSubscription.expiry);
+              const timeDiff = expiryDate - now;
+              const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+              
+              console.log('Active subscription found:', activeSubscription);
+              console.log('Days left:', daysLeft);
+              
+              hideLoadingOverlay();
+              showSubscriptionStatus('approved', expiryDate.toLocaleDateString(), daysLeft);
+              
+              // Update main content - user can access dashboard
+              document.querySelector('.main-content').innerHTML = `
+                <div style="text-align: center;">
+                  <h1>Welcome to Business Pro Dashboard</h1>
+                  <p style="margin-top: 20px; font-size: 1rem;">
+                    Your subscription is active and expires on ${expiryDate.toLocaleDateString()}
+                  </p>
+                </div>
+              `;
+              
+            } else if (latestSubscription) {
+              // User has subscription but not active - redirect based on status
+              if (latestSubscription.status === 'pending') {
+                redirectToSubscription('pending');
+              } else if (latestSubscription.status === 'rejected') {
+                redirectToSubscription('rejected');
+              } else {
+                // Expired subscription
+                redirectToSubscription('expired');
+              }
+            } else {
+              // No subscription found - redirect
+              console.log('No subscription found for user');
+              redirectToSubscription('none');
+            }
+          })
+          .catch(error => {
+            console.error('Error checking subscription:', error);
+            hideLoadingOverlay();
+            
+            // On error, also redirect to subscription page
+            redirectToSubscription('none', 3);
+          });
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const toggleButton = document.querySelector('.sidebar-toggle');
+        const mainContent = document.querySelector('.main-content');
+
+        // Toggle sidebar
+        toggleButton.addEventListener('click', function() {
+          sidebar.classList.toggle('active');
+        });
+
+        // Highlight active nav link
+        const navLinks = document.querySelectorAll('.nav-link');
+        const currentPath = window.location.pathname;
+        navLinks.forEach(link => {
+          const href = link.getAttribute('href');
+          if (currentPath.includes(href)) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
+          }
+        });
+
+        // Update clock
+        function updateClock() {
+          const now = new Date();
+          let clockElement = document.querySelector('.clock');
+          if (!clockElement) {
+            clockElement = document.createElement('div');
+            clockElement.className = 'clock';
+            clockElement.style.cssText = `
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              background: rgba(255, 255, 255, 0.9);
+              padding: 10px 15px;
+              border-radius: 10px;
+              font-weight: 600;
+              color: #374151;
+              z-index: 1001;
+              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            `;
+            document.body.appendChild(clockElement);
+          }
+          clockElement.textContent = now.toLocaleTimeString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Get user ID and check subscription
+        const userId = getUserId();
+        console.log('Current user ID:', userId);
+        
+        if (!userId) {
+          console.log('No user ID found, redirecting to login');
+          hideLoadingOverlay();
+          // Redirect to login page if no user ID
+          window.location.href = 'login.html'; // or '{% url "login" %}'
+          return;
+        }
+        
+        // Check subscription status
+        checkSubscriptionStatus(userId);
+      });
+
+      // Set user ID globally (this should be set by your Django template)
+      window.USER_ID = '{{ user.email|default:user.username|default:"" }}';
+    </script>
+</body>
+</html>

@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Assignment</title>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-bottom: 1rem;
+        }
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-link:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+        .nav-link:hover:before {
+            left: 100%;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(8px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            opacity: 0.8;
+        }
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            transition: margin-left 0.3s ease;
+        }
+        .page {
+            animation: fadeInUp 0.6s ease;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+        .page-subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            background: #667eea;
+            color: white;
+        }
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+            border: 2px solid #dc2626;
+        }
+        .btn-danger:hover {
+             transform: translateY(-2px);
+            background: #b91c1c;
+            border-color: #b91c1c;
+        }
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-x: auto;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
+        }
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        .table tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -1rem;
+        }
+        .form-col {
+            flex: 1;
+            padding: 0 1rem;
+            min-width: 250px;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+        }
+        .items-table th, .items-table td {
+            border: 1px solid #e5e7eb;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        .items-table th {
+            background: #f3f4f6;
+            font-weight: 600;
+        }
+        .remove-item-btn {
+            background: none;
+            border: none;
+            color: #dc2626;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+        .remove-item-btn:hover {
+            color: #b91c1c;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 1000px; /* Wider modal for form */
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #374151;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+        .dimension-inputs {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .dimension-inputs input {
+            flex: 1;
+        }
+        .dimension-inputs span {
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1002;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .connection-status {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: #dc2626;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            z-index: 1001;
+            display: none;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .sidebar-toggle {
+                display: block;
+            }
+            .form-row {
+                 flex-direction: column;
+            }
+            .form-col {
+                 min-width: unset;
+                 width: 100%;
+                 padding: 0;
+                 margin-bottom: 1rem;
+            }
+            .dimension-inputs {
+                 flex-direction: column;
+                 align-items: flex-start;
+            }
+            .dimension-inputs span {
+                 margin: 0.25rem 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="sidebar-toggle" aria-label="Toggle Sidebar">☰</button>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Business Pro</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link" aria-label="Home">
+                        <span class="nav-icon">🏠</span>
+                        Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link" aria-label="Dashboard">
+                        <span class="nav-icon">📊</span>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="inventory.html" class="nav-link" aria-label="Inventory">
+                        <span class="nav-icon">📦</span>
+                        Inventory
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="invoice.html" class="nav-link" aria-label="Invoice and Billing">
+                        <span class="nav-icon">📄</span>
+                        Invoice & Billing
+                    </a>
+                </li>
+                 <li class="nav-item">
+                    <a href="customers.html" class="nav-link" aria-label="Customers">
+                        <span class="nav-icon">👥</span>
+                        Customers
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link" aria-label="Employees">
+                        <span class="nav-icon">👤</span>
+                        Employees
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="purchase.html" class="nav-link" aria-label="Purchase">
+                        <span class="nav-icon">🛒</span>
+                        Purchase
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="expense.html" class="nav-link" aria-label="Expense">
+                        <span class="nav-icon">💸</span>
+                        Expense
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="tasks.html" class="nav-link active" aria-label="Task Assignment">
+                        <span class="nav-icon">✅</span>
+                        Task Assignment
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="payments.html" class="nav-link" aria-label="Payment Track">
+                        <span class="nav-icon">💳</span>
+                        Payment Track
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="website.html" class="nav-link" aria-label="Website Management">
+                        <span class="nav-icon">🌐</span>
+                        Website Management
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="ledger.html" class="nav-link" aria-label="Ledger">
+                        <span class="nav-icon">📚</span>
+                        Ledger
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.html" class="nav-link" aria-label="Settings">
+                        <span class="nav-icon">⚙️</span>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="main-content">
+            <div class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Task Assignment</h1>
+                    <p class="page-subtitle">Assign and manage tasks for your team</p>
+                </div>
+                <div class="table-container">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="margin: 0; color: #374151;">Assigned Tasks</h3>
+                        <button class="btn btn-primary" id="addTaskBtn" aria-label="Add New Task">➕ Add New Task</button>
+                    </div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Phone</th>
+                                <th>Location</th>
+                                <th>Category</th>
+                                <th>Dimensions</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Assigned To</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasksTableBody">
+                            <!-- Tasks will be loaded here dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Task Modal -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Add New Task</h2>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+            <form id="taskForm">
+                <input type="hidden" id="taskId">
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label class="form-label" for="customerName">Customer Name</label>
+                            <input type="text" class="form-input" id="customerName" placeholder="Enter customer name" required>
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label class="form-label" for="customerPhone">Phone Number</label>
+                            <input type="tel" class="form-input" id="customerPhone" placeholder="Enter phone number" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="customerLocation">Location</label>
+                    <input type="text" class="form-input" id="customerLocation" placeholder="Enter location" required>
+                </div>
+                <h3 style="margin: 1.5rem 0 1rem; color: #374151;">Items</h3>
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>S.No.</th>
+                            <th>Category</th>
+                            <th>Length (ft)</th>
+                            <th>Width (ft)</th>
+                            <th>Height (ft)</th>
+                            <th>Priority</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="taskItems">
+                        <tr>
+                            <td>1</td>
+                            <td>
+                                <select class="form-select item-category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Gypsum">Gypsum</option>
+                                    <option value="Tile">Tile</option>
+                                    <option value="Partition">Partition</option>
+                                    <option value="PVC">PVC</option>
+                                    <option value="Repairing">Repairing</option>
+                                </select>
+                            </td>
+                            <td><input type="number" class="form-input item-length" step="0.01" min="0" placeholder="Length"></td>
+                            <td><input type="number" class="form-input item-width" step="0.01" min="0" placeholder="Width"></td>
+                            <td><input type="number" class="form-input item-height" step="0.01" min="0" placeholder="Height"></td>
+                            <td>
+                                <select class="form-select item-priority" required>
+                                    <option value="Normal">Normal</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Emergency">Emergency</option>
+                                </select>
+                            </td>
+                            <td><button type="button" class="remove-item-btn" onclick="removeItem(this)" aria-label="Remove item">×</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button type="button" class="btn btn-secondary" onclick="addItem()" aria-label="Add another item">➕ Add Item</button>
+                <div class="form-group">
+                    <label class="form-label" for="assignedTo">Assign To</label>
+                    <select class="form-select" id="assignedTo" required>
+                        <option value="">Select employee</option>
+                        <option value="Ramesh Kumar">Ramesh Kumar</option>
+                        <option value="Suresh Patel">Suresh Patel</option>
+                        <option value="Priya Sharma">Priya Sharma</option>
+                        <option value="Anil Joshi">Anil Joshi</option>
+                        <!-- Add more employees as needed -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="taskStatus">Status</label>
+                    <select class="form-select" id="taskStatus" required>
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="taskNotes">Notes</label>
+                    <textarea class="form-input" id="taskNotes" rows="3" placeholder="Enter any additional notes"></textarea>
+                </div>
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-secondary" id="cancelTaskBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveTaskBtn">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="connection-status" id="connectionStatus">Database connection lost. Retrying...</div>
+
+    <script>
+        // --- Firebase Configuration ---
+        // Please ensure this matches your project's configuration
+        const firebaseConfig = {
+             apiKey: "AIzaSyCmJl82VktcyAZQYsMc_0Rw-2MxRNPBVUw",
+            authDomain: "shop-mgt.firebaseapp.com",
+            projectId: "shop-mgt",
+            storageBucket: "shop-mgt.appspot.com",
+            messagingSenderId: "577237698646",
+            appId: "1:577237698646:web:185d0aeb482eb7b70713f7",
+            measurementId: "G-D5YTD5M9HB",
+            databaseURL: "https://shop-mgt-default-rtdb.firebaseio.com/"
+        };
+
+
+        // Initialize Firebase
+        let database, tasksRef;
+        try {
+            const app = firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            tasksRef = database.ref('tasks');
+            console.log("Firebase initialized successfully for Tasks");
+
+            database.ref('.info/connected').on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    console.log("Connected to Firebase (Tasks)");
+                    hideConnectionError();
+                    loadTasks();
+                } else {
+                    console.log("Not connected to Firebase (Tasks)");
+                    showConnectionError();
+                }
+            });
+        } catch (err) {
+            console.error("Firebase initialization error (Tasks):", err);
+            showConnectionError();
+            alert("Failed to initialize Firebase for Tasks. Please check your configuration.");
+        }
+
+        // --- DOM Ready ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.querySelector('.sidebar-toggle');
+            const taskModal = document.getElementById('taskModal');
+            const closeModalBtn = document.getElementById('closeModal');
+            const cancelTaskBtn = document.getElementById('cancelTaskBtn');
+            const addTaskBtn = document.getElementById('addTaskBtn');
+            const taskForm = document.getElementById('taskForm');
+            const tasksTableBody = document.getElementById('tasksTableBody');
+            const connectionStatus = document.getElementById('connectionStatus');
+
+            // Sidebar toggle
+            toggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+
+            // Modal handling
+            function openModal() {
+                taskModal.style.display = 'flex';
+            }
+            function closeModal() {
+                taskModal.style.display = 'none';
+            }
+            closeModalBtn.addEventListener('click', closeModal);
+            cancelTaskBtn.addEventListener('click', closeModal);
+            taskModal.addEventListener('click', (e) => {
+                if (e.target === taskModal) closeModal();
+            });
+
+            // Add Task Button
+            addTaskBtn.addEventListener('click', function() {
+                resetTaskForm();
+                document.getElementById('modalTitle').textContent = 'Add New Task';
+                openModal();
+            });
+
+            // Form submission
+            taskForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                console.log("Form submission started");
+                if (!tasksRef) {
+                    console.error("Database reference not initialized");
+                    alert('Database not initialized. Please try again later.');
+                    showConnectionError();
+                    return;
+                }
+                const saveTaskBtn = document.getElementById('saveTaskBtn');
+                const originalText = saveTaskBtn.innerHTML;
+                saveTaskBtn.innerHTML = '<span class="loading"></span> Saving...';
+                saveTaskBtn.disabled = true;
+
+                try {
+                    const taskData = collectTaskData();
+                    if (!taskData) {
+                         saveTaskBtn.innerHTML = originalText;
+                         saveTaskBtn.disabled = false;
+                         return; // Validation failed or no items
+                    }
+                    const taskId = document.getElementById('taskId').value;
+
+                    if (taskId) {
+                        console.log(`Updating existing task: ${taskId}`);
+                        await tasksRef.child(taskId).update(taskData);
+                        console.log(`Task updated successfully: ${taskId}`);
+                        alert('Task updated successfully!');
+                    } else {
+                        console.log("Adding new task");
+                        const newTaskRef = tasksRef.push();
+                        await newTaskRef.set(taskData);
+                        console.log(`Task added successfully with ID: ${newTaskRef.key}`);
+                        alert('Task added successfully!');
+                    }
+                    closeModal();
+                } catch (err) {
+                    console.error("Error saving task:", err);
+                    console.error("Error details:", {
+                        code: err.code,
+                        message: err.message,
+                        stack: err.stack
+                    });
+                    alert(`Failed to save task: ${err.message}. Check console for details.`);
+                    showConnectionError();
+                } finally {
+                    saveTaskBtn.innerHTML = originalText;
+                    saveTaskBtn.disabled = false;
+                }
+            });
+        });
+
+        // --- Data Handling ---
+        function collectTaskData() {
+            const customerName = document.getElementById('customerName').value.trim();
+            const customerPhone = document.getElementById('customerPhone').value.trim();
+            const customerLocation = document.getElementById('customerLocation').value.trim();
+            const assignedTo = document.getElementById('assignedTo').value;
+            const status = document.getElementById('taskStatus').value;
+            const notes = document.getElementById('taskNotes').value;
+
+            if (!customerName || !customerPhone || !customerLocation || !assignedTo || !status) {
+                alert("Please fill in all required fields.");
+                return null;
+            }
+
+            const items = [];
+            const rows = document.querySelectorAll('#taskItems tr');
+            let hasValidItem = false;
+
+            rows.forEach((row, index) => {
+                const categorySelect = row.querySelector('.item-category');
+                const lengthInput = row.querySelector('.item-length');
+                const widthInput = row.querySelector('.item-width');
+                const heightInput = row.querySelector('.item-height');
+                const prioritySelect = row.querySelector('.item-priority');
+
+                const category = categorySelect.value;
+                const length = parseFloat(lengthInput.value) || 0;
+                const width = parseFloat(widthInput.value) || 0;
+                const height = parseFloat(heightInput.value) || 0;
+                const priority = prioritySelect.value;
+
+                // Check if at least category and one dimension or priority is provided
+                if (category || length > 0 || width > 0 || height > 0 || priority !== 'Normal') {
+                    hasValidItem = true;
+                    items.push({
+                        sNo: index + 1,
+                        category: category || 'N/A',
+                        length: length,
+                        width: width,
+                        height: height,
+                        priority: priority
+                    });
+                }
+            });
+
+            if (!hasValidItem) {
+                alert("Please add at least one item with some details.");
+                return null;
+            }
+
+            return {
+                customerName,
+                customerPhone,
+                customerLocation,
+                assignedTo,
+                status,
+                notes,
+                items,
+                createdAt: firebase.database.ServerValue.TIMESTAMP,
+                updatedAt: firebase.database.ServerValue.TIMESTAMP
+            };
+        }
+
+        function loadTasks() {
+            if (!tasksRef) {
+                console.error('Tasks reference not initialized');
+                showConnectionError();
+                return;
+            }
+            console.log('Setting up tasks listener');
+            tasksRef.on('value', (snapshot) => {
+                console.log('Loading tasks from database');
+                const tasks = snapshot.val();
+                populateTasksTable(tasks);
+                hideConnectionError();
+            }, (err) => {
+                console.error('Error loading tasks:', err);
+                alert(`Failed to load tasks: ${err.message}`);
+                showConnectionError();
+            });
+        }
+
+        function populateTasksTable(tasks) {
+            const tasksTableBody = document.getElementById('tasksTableBody');
+            tasksTableBody.innerHTML = '';
+            if (!tasks) {
+                tasksTableBody.innerHTML = '<tr><td colspan="9" style="text-align: center;">No tasks found. Add your first task!</td></tr>';
+                return;
+            }
+            Object.entries(tasks).forEach(([id, task]) => {
+                const row = document.createElement('tr');
+                // Format dimensions for display
+                let dimensionsHTML = '';
+                if (task.items && task.items.length > 0) {
+                    task.items.forEach(item => {
+                        dimensionsHTML += `<div>${item.length || 0}ft × ${item.width || 0}ft × ${item.height || 0}ft (${item.category || 'N/A'})</div>`;
+                    });
+                } else {
+                    dimensionsHTML = 'N/A';
+                }
+
+                // Get primary category/priority from first item for table summary
+                let primaryCategory = 'N/A';
+                let primaryPriority = 'N/A';
+                if (task.items && task.items.length > 0) {
+                    primaryCategory = task.items[0].category || 'N/A';
+                    primaryPriority = task.items[0].priority || 'N/A';
+                }
+
+                row.innerHTML = `
+                    <td>${task.customerName || 'N/A'}</td>
+                    <td>${task.customerPhone || 'N/A'}</td>
+                    <td>${task.customerLocation || 'N/A'}</td>
+                    <td>${primaryCategory}</td>
+                    <td>${dimensionsHTML}</td>
+                    <td>${primaryPriority}</td>
+                    <td>${task.status || 'Pending'}</td>
+                    <td>${task.assignedTo || 'Unassigned'}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="editTask('${id}')" aria-label="Edit task">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteTask('${id}')" aria-label="Delete task">Delete</button>
+                    </td>
+                `;
+                tasksTableBody.appendChild(row);
+            });
+        }
+
+        // --- Task Actions ---
+        async function editTask(id) {
+            if (!tasksRef) {
+                console.error("Database reference not initialized");
+                alert('Database not initialized. Please try again later.');
+                return;
+            }
+            try {
+                const snapshot = await tasksRef.child(id).once('value');
+                const task = snapshot.val();
+                if (task) {
+                    console.log('Editing task:', id, task);
+                    populateTaskForm(task, id);
+                    document.getElementById('modalTitle').textContent = 'Edit Task';
+                    document.getElementById('taskModal').style.display = 'flex';
+                } else {
+                    console.warn(`Task not found: ${id}`);
+                    alert('Task not found.');
+                }
+            } catch (err) {
+                console.error('Error loading task:', err);
+                alert(`Failed to load task details: ${err.message}`);
+                showConnectionError();
+            }
+        }
+
+        function populateTaskForm(task, id) {
+            document.getElementById('taskId').value = id;
+            document.getElementById('customerName').value = task.customerName || '';
+            document.getElementById('customerPhone').value = task.customerPhone || '';
+            document.getElementById('customerLocation').value = task.customerLocation || '';
+            document.getElementById('assignedTo').value = task.assignedTo || '';
+            document.getElementById('taskStatus').value = task.status || 'Pending';
+            document.getElementById('taskNotes').value = task.notes || '';
+
+            const itemsContainer = document.getElementById('taskItems');
+            itemsContainer.innerHTML = ''; // Clear existing items
+
+            if (task.items && task.items.length > 0) {
+                task.items.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>
+                            <select class="form-select item-category" required>
+                                <option value="">Select Category</option>
+                                <option value="Gypsum" ${item.category === 'Gypsum' ? 'selected' : ''}>Gypsum</option>
+                                <option value="Tile" ${item.category === 'Tile' ? 'selected' : ''}>Tile</option>
+                                <option value="Partition" ${item.category === 'Partition' ? 'selected' : ''}>Partition</option>
+                                <option value="PVC" ${item.category === 'PVC' ? 'selected' : ''}>PVC</option>
+                                <option value="Repairing" ${item.category === 'Repairing' ? 'selected' : ''}>Repairing</option>
+                            </select>
+                        </td>
+                        <td><input type="number" class="form-input item-length" step="0.01" min="0" value="${item.length || ''}" placeholder="Length"></td>
+                        <td><input type="number" class="form-input item-width" step="0.01" min="0" value="${item.width || ''}" placeholder="Width"></td>
+                        <td><input type="number" class="form-input item-height" step="0.01" min="0" value="${item.height || ''}" placeholder="Height"></td>
+                        <td>
+                            <select class="form-select item-priority" required>
+                                <option value="Normal" ${item.priority === 'Normal' ? 'selected' : ''}>Normal</option>
+                                <option value="Medium" ${item.priority === 'Medium' ? 'selected' : ''}>Medium</option>
+                                <option value="Emergency" ${item.priority === 'Emergency' ? 'selected' : ''}>Emergency</option>
+                            </select>
+                        </td>
+                        <td><button type="button" class="remove-item-btn" onclick="removeItem(this)" aria-label="Remove item">×</button></td>
+                    `;
+                    itemsContainer.appendChild(row);
+                });
+            } else {
+                // Add at least one empty row if no items
+                addItem();
+            }
+        }
+
+        async function deleteTask(id) {
+            if (!tasksRef) {
+                console.error("Database reference not initialized");
+                alert('Database not initialized. Please try again later.');
+                return;
+            }
+            if (confirm("Are you sure you want to delete this task?")) {
+                const deleteBtn = event.target;
+                const originalText = deleteBtn.innerHTML;
+                deleteBtn.innerHTML = '<span class="loading"></span> Deleting...';
+                deleteBtn.disabled = true;
+                try {
+                    await tasksRef.child(id).remove();
+                    console.log(`Task deleted successfully: ${id}`);
+                    alert('Task deleted successfully!');
+                } catch (err) {
+                    console.error('Error deleting task:', err);
+                    alert(`Failed to delete task: ${err.message}`);
+                    showConnectionError();
+                } finally {
+                    deleteBtn.innerHTML = originalText;
+                    deleteBtn.disabled = false;
+                }
+            }
+        }
+
+        function resetTaskForm() {
+            document.getElementById('taskForm').reset();
+            document.getElementById('taskId').value = '';
+            const itemsContainer = document.getElementById('taskItems');
+            itemsContainer.innerHTML = ''; // Clear items
+            addItem(); // Add one default item row
+        }
+
+        // --- Item Management ---
+        function addItem() {
+            const itemsContainer = document.getElementById('taskItems');
+            const newRow = document.createElement('tr');
+            const rowCount = itemsContainer.rows.length + 1;
+            newRow.innerHTML = `
+                <td>${rowCount}</td>
+                <td>
+                    <select class="form-select item-category" required>
+                        <option value="">Select Category</option>
+                        <option value="Gypsum">Gypsum</option>
+                        <option value="Tile">Tile</option>
+                        <option value="Partition">Partition</option>
+                        <option value="PVC">PVC</option>
+                        <option value="Repairing">Repairing</option>
+                    </select>
+                </td>
+                <td><input type="number" class="form-input item-length" step="0.01" min="0" placeholder="Length"></td>
+                <td><input type="number" class="form-input item-width" step="0.01" min="0" placeholder="Width"></td>
+                <td><input type="number" class="form-input item-height" step="0.01" min="0" placeholder="Height"></td>
+                <td>
+                    <select class="form-select item-priority" required>
+                        <option value="Normal">Normal</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Emergency">Emergency</option>
+                    </select>
+                </td>
+                <td><button type="button" class="remove-item-btn" onclick="removeItem(this)" aria-label="Remove item">×</button></td>
+            `;
+            itemsContainer.appendChild(newRow);
+        }
+
+        function removeItem(button) {
+            const row = button.closest('tr');
+            const tbody = row.parentNode;
+            if (tbody.rows.length > 1) {
+                tbody.removeChild(row);
+                // Update row numbers
+                Array.from(tbody.rows).forEach((r, index) => {
+                    r.cells[0].textContent = index + 1;
+                });
+            } else {
+                alert("You must have at least one item.");
+            }
+        }
+
+        // --- Utility Functions ---
+        function showConnectionError() {
+            document.getElementById('connectionStatus').style.display = 'block';
+        }
+
+        function hideConnectionError() {
+            document.getElementById('connectionStatus').style.display = 'none';
+        }
+
+    </script>
+</body>
+</html>

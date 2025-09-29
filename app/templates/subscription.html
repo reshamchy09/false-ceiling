@@ -1,0 +1,453 @@
+<!-- templates/subscribe.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Subscribe to Dhangadhi False Ceiling - Exclusive Content & Updates{% endblock %}
+{% block meta_description %}Subscribe to our premium content and updates on false ceiling services in Dhangadhi, Nepal. Get exclusive tips, offers, and project insights.{% endblock %}
+
+{% block content %}
+<div class="container my-5 py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="glass-card p-4 p-md-5 shadow-lg rounded-4" data-aos="fade-up">
+                <div class="text-center mb-4 mb-md-5">
+                    <h1 class="display-6 fw-bold gradient-text">Premium Subscription</h1>
+                    <p class="text-muted">Unlock exclusive content and updates</p>
+                </div>
+
+                <div class="row g-5 align-items-stretch">
+                    <div class="col-md-6">
+                        <div class="text-center h-100 d-flex flex-column">
+                            <div class="flex-grow-1">
+                                <div class="position-relative d-inline-block mb-4">
+                                    <img src="{% static 'images/qr_code.jpg' %}" alt="QR Code for Payment" class="qr img-fluid rounded-3 shadow-sm">
+                                    <div class="pulse-glow position-absolute top-0 start-0 w-100 h-100 rounded-3" style="pointer-events: none;"></div>
+                                </div>
+                                <h4 class="fw-bold mb-1">Resam Chaudhary</h4>
+                                <p class="text-muted small">Scan QR to pay via eSewa / Khalti</p>
+                            </div>
+                            <div class="mt-auto">
+                                <div class="alert alert-info text-start mt-4" role="alert">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Subscription Plans:</strong>
+                                    <ul class="mb-0 mt-1 small">
+                                        <li>1 Month: NPR <span id="priceInfo1">Loading...</span></li>
+                                        <li>3 Months: NPR <span id="priceInfo3">Loading...</span></li>
+                                        <li>6 Months: NPR <span id="priceInfo6">Loading...</span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <form id="subscriptionForm">
+                            {% csrf_token %}
+                            <div class="mb-4">
+                                <label for="plan" class="form-label fw-semibold">Select Subscription Plan</label>
+                                <select class="form-select form-select-lg" id="plan" required>
+                                    <option value="" selected disabled>Choose Plan</option>
+                                    <option value="1">1 Month</option>
+                                    <option value="3">3 Months</option>
+                                    <option value="6">6 Months</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Subscription Price</label>
+                                <div class="fs-4 fw-bold text-primary">
+                                    NPR <span id="priceDisplay">--</span>
+                                </div>
+                                <div class="form-text">Price updates automatically based on selected plan.</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="reference" class="form-label fw-semibold">Reference / Transaction Code</label>
+                                <input type="text" class="form-control form-control-lg" id="reference" placeholder="e.g. ES1234567890" required>
+                                <div class="form-text">Enter the unique code from your payment app.</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="proof" class="form-label fw-semibold">Upload Payment Proof</label>
+                                <input type="file" class="form-control form-control-lg" id="proof" accept="image/*" required>
+                                <div class="form-text">Please upload a clear screenshot of your payment confirmation.</div>
+                            </div>
+
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-primary-custom btn-lg">Submit Subscription</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="subscriptionResult" class="mt-5 text-center" style="display: none;">
+                    <div class="p-4 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h4 class="fw-bold text-success">Subscription Submitted!</h4>
+                        <p class="mb-0">Thank you for your submission. Your request is pending admin approval. You will receive a confirmation email shortly.</p>
+                    </div>
+                </div>
+
+                <!-- Subscription History Section -->
+                <div class="mt-5 pt-4 border-top">
+                    <h3 class="mb-4 fw-bold gradient-text">Your Subscription History</h3>
+                    <div id="historyLoading" class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Fetching your subscription history...</p>
+                    </div>
+                    <div id="historyContent" style="display: none;">
+                        <div id="noHistoryMessage" class="alert alert-secondary text-center" style="display: none;">
+                            You have no subscription history yet.
+                        </div>
+                        <div class="row g-4" id="historyList">
+                            <!-- History items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User ID Script - Add this to pass user info to JavaScript -->
+<script>
+    // Set user ID globally for use in subscription script
+    window.USER_ID = '{{ user.email|default:user.username|default:"anonymous" }}';
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Get user ID from global variable
+    const userId = window.USER_ID;
+    
+    if (!userId || userId === 'anonymous') {
+        console.error("User not logged in or user ID not found.");
+        document.getElementById('historyLoading').innerHTML = '<p class="text-danger">Please log in to view subscription history.</p>';
+        // Don't return here - still allow viewing prices and submitting (you can add login check in form submission)
+    }
+    
+    console.log("User ID for subscription:", userId);
+
+    // Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyCmJl82VktcyAZQYsMc_0Rw-2MxRNPBVUw",
+        authDomain: "shop-mgt.firebaseapp.com",
+        databaseURL: "https://shop-mgt-default-rtdb.firebaseio.com",
+        projectId: "shop-mgt",
+        storageBucket: "shop-mgt.appspot.com",
+        messagingSenderId: "577237698646",
+        appId: "1:577237698646:web:185d0aeb482eb7b70713f7",
+        measurementId: "G-D5YTD5M9HB"
+    };
+
+    // Initialize Firebase
+    let db;
+    try {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        db = firebase.database();
+        console.log("Firebase initialized successfully");
+    } catch (error) {
+        console.error("Firebase initialization error:", error);
+        document.getElementById("priceDisplay").innerText = "Service Error";
+        document.getElementById('historyLoading').innerHTML = '<p class="text-danger">Service temporarily unavailable.</p>';
+        return;
+    }
+
+    // Variables
+    const prices = {};
+    const planSelect = document.getElementById("plan");
+    const priceDisplay = document.getElementById("priceDisplay");
+    const form = document.getElementById("subscriptionForm");
+    const resultDiv = document.getElementById("subscriptionResult");
+    const historyLoadingDiv = document.getElementById("historyLoading");
+    const historyContentDiv = document.getElementById("historyContent");
+    const noHistoryMessage = document.getElementById("noHistoryMessage");
+    const historyList = document.getElementById("historyList");
+
+    // Reset price display
+    function resetPriceDisplay() {
+        priceDisplay.innerText = "--";
+    }
+    resetPriceDisplay();
+
+    // Load subscription prices from Firebase
+    function loadPrices() {
+        console.log("Loading prices from Firebase...");
+        
+        // Set loading state
+        const priceRefs = ["1", "3", "6"];
+        priceRefs.forEach(ref => {
+            const infoElement = document.getElementById(`priceInfo${ref}`);
+            if (infoElement) infoElement.innerText = 'Loading...';
+        });
+
+        db.ref("subscriptionPrices").once("value")
+            .then(snapshot => {
+                const data = snapshot.val();
+                console.log("Price data from Firebase:", data);
+                
+                if (data && typeof data === 'object' && !Array.isArray(data)) {
+                    // Store prices
+                    prices["1"] = data["1"] ? parseInt(data["1"], 10) : null;
+                    prices["3"] = data["3"] ? parseInt(data["3"], 10) : null;
+                    prices["6"] = data["6"] ? parseInt(data["6"], 10) : null;
+                    
+                    console.log("Parsed prices:", prices);
+
+                    // Update info box prices
+                    priceRefs.forEach(ref => {
+                        const infoElement = document.getElementById(`priceInfo${ref}`);
+                        if (infoElement) {
+                            const price = prices[ref];
+                            infoElement.innerText = (price !== null && !isNaN(price)) ? price : 'N/A';
+                        }
+                    });
+
+                    // Update main price display if a plan is selected
+                    updateMainPriceDisplay();
+                } else {
+                    console.error("Invalid price data structure:", data);
+                    handlePriceError("Invalid data");
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching prices:", error);
+                handlePriceError("Failed to load");
+            });
+    }
+
+    // Handle price loading errors
+    function handlePriceError(errorText) {
+        priceDisplay.innerText = errorText;
+        ["1", "3", "6"].forEach(ref => {
+            const infoElement = document.getElementById(`priceInfo${ref}`);
+            if (infoElement) infoElement.innerText = errorText;
+        });
+    }
+
+    // Update main price display based on selected plan
+    function updateMainPriceDisplay() {
+        const selectedValue = planSelect.value;
+        if (selectedValue && prices[selectedValue] !== undefined && prices[selectedValue] !== null && !isNaN(prices[selectedValue])) {
+            priceDisplay.innerText = prices[selectedValue];
+        } else {
+            resetPriceDisplay();
+        }
+    }
+
+    // Load prices on page load
+    loadPrices();
+
+    // Update price display when plan changes
+    planSelect.addEventListener("change", updateMainPriceDisplay);
+
+    // Handle form submission
+    form.addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        // Check if user is logged in
+        if (!userId || userId === 'anonymous') {
+            alert("Please log in to submit a subscription request.");
+            return;
+        }
+
+        const plan = parseInt(planSelect.value, 10);
+        const reference = document.getElementById("reference").value.trim();
+        const proofFile = document.getElementById("proof").files[0];
+
+        // Validation
+        if (!plan || !reference || !proofFile) {
+            alert("Please fill in all required fields and select a plan.");
+            return;
+        }
+
+        if (prices[plan] === undefined || prices[plan] === null || isNaN(prices[plan])) {
+            alert("Subscription price is not available for the selected plan. Please try again later.");
+            return;
+        }
+
+        // Disable form during submission
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.innerText = 'Submitting...';
+
+        // Read file and submit
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            const proofData = event.target.result;
+            const subscriptionId = `${userId.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+
+            const expiryDate = new Date();
+            expiryDate.setMonth(expiryDate.getMonth() + plan);
+
+            const subscriptionData = {
+                id: subscriptionId,
+                userId: userId,
+                plan: plan,
+                price: prices[plan],
+                reference: reference,
+                proof: proofData,
+                status: "pending",
+                expiry: expiryDate.toISOString(),
+                submittedAt: new Date().toISOString()
+            };
+
+            // Submit to Firebase
+            db.ref("subscriptions/" + subscriptionId).set(subscriptionData)
+                .then(() => {
+                    console.log("Subscription submitted successfully!");
+                    
+                    // Show success message
+                    resultDiv.style.display = 'block';
+                    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    
+                    // Reset form
+                    form.reset();
+                    resetPriceDisplay();
+                    
+                    // Reload subscription history
+                    if (userId && userId !== 'anonymous') {
+                        loadSubscriptionHistory();
+                    }
+                    
+                    // Re-enable submit button
+                    submitButton.disabled = false;
+                    submitButton.innerText = 'Submit Subscription';
+                })
+                .catch((error) => {
+                    console.error("Error submitting subscription: ", error);
+                    alert("An error occurred while submitting your subscription. Please try again.");
+                    
+                    // Re-enable submit button
+                    submitButton.disabled = false;
+                    submitButton.innerText = 'Submit Subscription';
+                });
+        };
+
+        reader.onerror = function (error) {
+            console.error("Error reading file:", error);
+            alert("An error occurred while reading the uploaded file. Please try again.");
+            
+            // Re-enable submit button
+            submitButton.disabled = false;
+            submitButton.innerText = 'Submit Subscription';
+        };
+
+        reader.readAsDataURL(proofFile);
+    });
+
+    // Load subscription history
+    function loadSubscriptionHistory() {
+        if (!userId || userId === 'anonymous') {
+            historyLoadingDiv.style.display = 'none';
+            historyContentDiv.style.display = 'block';
+            noHistoryMessage.style.display = 'block';
+            noHistoryMessage.innerHTML = 'Please log in to view your subscription history.';
+            return;
+        }
+
+        historyLoadingDiv.style.display = 'block';
+        historyContentDiv.style.display = 'none';
+        noHistoryMessage.style.display = 'none';
+        historyList.innerHTML = '';
+
+        console.log("Loading subscription history for user:", userId);
+
+        // Query subscriptions for current user
+        db.ref("subscriptions").orderByChild("userId").equalTo(userId).once("value")
+            .then(snapshot => {
+                const historyData = [];
+                snapshot.forEach(child => {
+                    historyData.push(child.val());
+                });
+
+                console.log("Found subscriptions:", historyData.length);
+
+                // Sort by submission date (newest first)
+                historyData.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+
+                historyLoadingDiv.style.display = 'none';
+                historyContentDiv.style.display = 'block';
+
+                if (historyData.length === 0) {
+                    noHistoryMessage.style.display = 'block';
+                } else {
+                    historyData.forEach(sub => {
+                        const historyItem = document.createElement('div');
+                        historyItem.className = 'col-md-6 col-lg-4';
+                        
+                        // Determine status badge class
+                        let statusClass = 'bg-secondary';
+                        let statusText = sub.status || 'Unknown';
+                        if (sub.status === 'approved') statusClass = 'bg-success';
+                        else if (sub.status === 'rejected') statusClass = 'bg-danger';
+                        else if (sub.status === 'pending') statusClass = 'bg-warning text-dark';
+
+                        historyItem.innerHTML = `
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">${sub.plan} Month Plan</h5>
+                                    <p class="card-text">
+                                        <strong>Price:</strong> NPR ${sub.price}<br>
+                                        <strong>Date:</strong> ${new Date(sub.submittedAt).toLocaleDateString()}<br>
+                                        <strong>Status:</strong>
+                                        <span class="badge ${statusClass}">${statusText}</span>
+                                        ${
+                                            sub.status === 'rejected' && sub.rejectReason
+                                                ? `<br><small class="text-muted mt-1 d-block">Reason: ${sub.rejectReason}</small>`
+                                                : ''
+                                        }
+                                    </p>
+                                    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#details-${sub.id}" aria-expanded="false">
+                                        View Details
+                                    </button>
+                                    <div class="collapse mt-2" id="details-${sub.id}">
+                                        <div class="card card-body small">
+                                            <strong>Reference:</strong> ${sub.reference}<br>
+                                            <strong>Submitted:</strong> ${new Date(sub.submittedAt).toLocaleString()}<br>
+                                            ${
+                                                sub.status === 'approved' && sub.expiry
+                                                    ? `<strong>Expires:</strong> ${new Date(sub.expiry).toLocaleDateString()}<br>`
+                                                    : ''
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        historyList.appendChild(historyItem);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching subscription history:", error);
+                historyLoadingDiv.style.display = 'none';
+                historyContentDiv.style.display = 'block';
+                noHistoryMessage.style.display = 'block';
+                noHistoryMessage.innerHTML = '<span class="text-danger">Failed to load subscription history. Please try again later.</span>';
+            });
+    }
+
+    // Load subscription history on page load
+    if (userId && userId !== 'anonymous') {
+        loadSubscriptionHistory();
+    } else {
+        // Show login message for history
+        historyLoadingDiv.style.display = 'none';
+        historyContentDiv.style.display = 'block';
+        noHistoryMessage.style.display = 'block';
+        noHistoryMessage.innerHTML = 'Please log in to view your subscription history.';
+    }
+});
+</script>
+{% endblock %}

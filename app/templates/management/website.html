@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Management</title>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .nav-link:hover:before {
+            left: 100%;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(8px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            opacity: 0.8;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            transition: margin-left 0.3s ease;
+        }
+
+        .page {
+            animation: fadeInUp 0.6s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card:hover:before {
+            transform: scaleX(1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-description {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1002;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+        }
+
+        .card-animated {
+            animation: pulse 2s infinite;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <button class="sidebar-toggle" aria-label="Toggle Sidebar">☰</button>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Business Pro</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link" aria-label="Home">
+                        <span class="nav-icon">🏠</span>
+                        Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link" aria-label="Dashboard">
+                        <span class="nav-icon">📊</span>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="inventory.html" class="nav-link" aria-label="Inventory">
+                        <span class="nav-icon">📦</span>
+                        Inventory
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="sales.html" class="nav-link" aria-label="Sales">
+                        <span class="nav-icon">💰</span>
+                        Sales
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="customers.html" class="nav-link" aria-label="Customers">
+                        <span class="nav-icon">👥</span>
+                        Customers
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link" aria-label="Employees">
+                        <span class="nav-icon">👤</span>
+                        Employees
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="invoice.html" class="nav-link" aria-label="Invoice and Billing">
+                        <span class="nav-icon">📄</span>
+                        Invoice & Billing
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="purchase.html" class="nav-link" aria-label="Purchase">
+                        <span class="nav-icon">🛒</span>
+                        Purchase
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="expense.html" class="nav-link" aria-label="Expense">
+                        <span class="nav-icon">💸</span>
+                        Expense
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="tasks.html" class="nav-link" aria-label="Task Assignment">
+                        <span class="nav-icon">✅</span>
+                        Task Assignment
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="payments.html" class="nav-link" aria-label="Payment Track">
+                        <span class="nav-icon">💳</span>
+                        Payment Track
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="website.html" class="nav-link active" aria-label="Website Management">
+                        <span class="nav-icon">🌐</span>
+                        Website Management
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="ledger.html" class="nav-link" aria-label="Ledger">
+                        <span class="nav-icon">📚</span>
+                        Ledger
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.html" class="nav-link" aria-label="Settings">
+                        <span class="nav-icon">⚙️</span>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Website Management</h1>
+                    <p class="page-subtitle">Monitor and optimize your website performance</p>
+                </div>
+
+                <div class="cards-grid">
+                    <div class="card">
+                        <button class="btn btn-primary" id="updateWebsiteBtn" aria-label="Update Website">
+                            🌐 Update Website
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">📈</div>
+                            <div class="card-title">Daily Visitors</div>
+                        </div>
+                        <div class="card-value" id="dailyVisitors">0</div>
+                        <div class="card-description">Unique visitors today</div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Recent Analytics</h3>
+                    <table class="table" id="analyticsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Visitors</th>
+                                <th>Page Views</th>
+                                <th>Bounce Rate</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analyticsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.querySelector('.sidebar-toggle');
+
+            toggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const currentPath = window.location.pathname.split('/').pop();
+            navLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href === currentPath) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (!this.querySelector('.loading') && this.id !== 'updateWebsiteBtn') {
+                        const originalText = this.innerHTML;
+                        this.innerHTML = '<span class="loading"></span> Processing...';
+                        this.disabled = true;
+                        
+                        setTimeout(() => {
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        }, 1500);
+                    }
+                });
+            });
+
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-8px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+
+            // Load Analytics
+            function loadAnalytics() {
+                const analyticsRef = database.ref('analytics');
+                analyticsRef.on('value', (snapshot) => {
+                    const analytics = snapshot.val();
+                    const analyticsTableBody = document.getElementById('analyticsTableBody');
+                    const dailyVisitorsElement = document.getElementById('dailyVisitors');
+                    analyticsTableBody.innerHTML = '';
+                    let latestVisitors = 0;
+
+                    if (analytics) {
+                        Object.keys(analytics).forEach(key => {
+                            const analytic = analytics[key];
+                            if (analytic.date === '2025-05-30') latestVisitors = analytic.visitors; // Latest date
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${analytic.date}</td>
+                                <td>${analytic.visitors}</td>
+                                <td>${analytic.pageViews}</td>
+                                <td>${analytic.bounceRate}</td>
+                                <td>
+                                    <button class="btn btn-secondary" onclick="alert('View analytics functionality not implemented')" aria-label="View Analytics ${analytic.date}">View</button>
+                                </td>
+                            `;
+                            analyticsTableBody.appendChild(row);
+                        });
+                    }
+
+                    dailyVisitorsElement.textContent = latestVisitors;
+                    animateNumbers();
+                    addSearchFunctionality();
+                }, (error) => {
+                    console.error('Error loading analytics:', error);
+                    alert('Failed to load analytics');
+                });
+            }
+
+            // Add New Analytics
+            document.getElementById('updateWebsiteBtn').addEventListener('click', function() {
+                const date = prompt('Enter date (YYYY-MM-DD):');
+                const visitors = prompt('Enter number of visitors:');
+                const pageViews = prompt('Enter number of page views:');
+                const bounceRate = prompt('Enter bounce rate (e.g., 45%):');
+                if (date && visitors && pageViews && bounceRate) {
+                    const analyticsRef = database.ref('analytics');
+                    const newAnalyticRef = analyticsRef.push();
+                    newAnalyticRef.set({
+                        date: date,
+                        visitors: parseInt(visitors),
+                        pageViews: parseInt(pageViews),
+                        bounceRate: bounceRate
+                    }).then(() => {
+                        alert('Analytics updated successfully!');
+                    }).catch(error => {
+                        console.error('Error updating analytics:', error);
+                        alert('Failed to update analytics');
+                    });
+                } else {
+                    alert('All fields are required');
+                }
+            });
+
+            // Initialize Analytics
+            loadAnalytics();
+
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            const elementsToAnimate = document.querySelectorAll('.card, .table-container');
+            elementsToAnimate.forEach(el => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(30px)';
+                el.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                observer.observe(el);
+            });
+
+            function updateClock() {
+                const now = new Date();
+                let clockElement = document.querySelector('.clock');
+                
+                if (!clockElement) {
+                    clockElement = document.createElement('div');
+                    clockElement.className = 'clock';
+                    clockElement.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: rgba(255, 255, 255, 0.9);
+                        padding: 10px 15px;
+                        border-radius: 10px;
+                        font-weight: 600;
+                        color: #374151;
+                        z-index: 1001;
+                        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                    `;
+                    document.body.appendChild(clockElement);
+                }
+                
+                clockElement.textContent = now.toLocaleString();
+            }
+
+            setInterval(updateClock, 1000);
+            updateClock();
+
+            function animateNumbers() {
+                const numberElements = document.querySelectorAll('.card-value');
+                numberElements.forEach(element => {
+                    const text = element.textContent;
+                    const number = parseInt(text.replace(/[^0-9]/g, '')) || 0;
+                    const prefix = text.replace(/[0-9,]/g, '');
+                    
+                    if (number > 0) {
+                        let current = 0;
+                        const increment = number / 50;
+                        const timer = setInterval(() => {
+                            current += increment;
+                            if (current >= number) {
+                                current = number;
+                                clearInterval(timer);
+                            }
+                            element.textContent = prefix + Math.floor(current).toLocaleString();
+                        }, 30);
+                    }
+                });
+            }
+
+            function addSearchFunctionality() {
+                const tableContainer = document.querySelector('.table-container');
+                if (!tableContainer.querySelector('.search-input')) {
+                    const table = tableContainer.querySelector('.table');
+                    const searchInput = document.createElement('input');
+                    searchInput.className = 'form-input search-input';
+                    searchInput.placeholder = 'Search analytics...';
+                    searchInput.style.marginBottom = '1rem';
+                    searchInput.setAttribute('aria-label', 'Search table');
+                    
+                    searchInput.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase();
+                        const rows = table.querySelectorAll('tbody tr');
+                        
+                        rows.forEach(row => {
+                            const text = row.textContent.toLowerCase();
+                            row.style.display = text.includes(searchTerm) ? '' : 'none';
+                        });
+                    });
+                    
+                    tableContainer.insertBefore(searchInput, table);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

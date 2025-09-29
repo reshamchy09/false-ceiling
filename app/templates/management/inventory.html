@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
+    <!-- jsPDF and html2canvas for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-bottom: 1rem;
+        }
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .nav-menu {
+            list-style: none;
+            padding: 0 1rem;
+        }
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-link:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+        .nav-link:hover:before {
+            left: 100%;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(8px);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        }
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            opacity: 0.8;
+        }
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            transition: margin-left 0.3s ease;
+        }
+        .page {
+            animation: fadeInUp 0.6s ease;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .page-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+        .page-subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+        .card:hover:before {
+            transform: scaleX(1);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+        .card-description {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        /* Filter Section Styles */
+        .filter-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: end;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 200px; /* Ensure minimum width for smaller screens */
+        }
+        .filter-label {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        .filter-select {
+            padding: 10px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+        }
+        .filter-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+         .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            background: #667eea;
+            color: white;
+        }
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+            border: 2px solid #dc2626;
+        }
+        .btn-danger:hover {
+             transform: translateY(-2px);
+            background: #b91c1c; /* Slightly darker on hover */
+            border-color: #b91c1c;
+        }
+        .btn-pdf {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24); /* Distinct color for PDF */
+            color: white;
+            border: 2px solid #ff6b6b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-pdf:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #ee5a24, #ff6b6b);
+            box-shadow: 0 8px 25px rgba(238, 90, 36, 0.4);
+            border-color: #ee5a24;
+        }
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-x: auto;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
+        }
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        .table tbody tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-pending { /* Low Stock */
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-medium { /* Medium Stock */
+             background: #dbeafe;
+             color: #1e40af;
+        }
+        .status-high { /* High Stock */
+             background: #dcfce7;
+             color: #166534;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #374151;
+        }
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1002;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .connection-status {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: #dc2626;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            z-index: 1001;
+            display: none;
+        }
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .sidebar-toggle {
+                display: block;
+            }
+            .filter-section {
+                 flex-direction: column;
+                 align-items: stretch;
+            }
+            .filter-group {
+                min-width: unset;
+                width: 100%;
+            }
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+        }
+        .card-animated {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <button class="sidebar-toggle" aria-label="Toggle Sidebar">☰</button>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Business Pro</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link" aria-label="Home">
+                        <span class="nav-icon">🏠</span>
+                        Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="dashboard.html" class="nav-link" aria-label="Dashboard">
+                        <span class="nav-icon">📊</span>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="inventory.html" class="nav-link active" aria-label="Inventory">
+                        <span class="nav-icon">📦</span>
+                        Inventory
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="sales.html" class="nav-link" aria-label="Sales">
+                        <span class="nav-icon">💰</span>
+                        Sales
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="customers.html" class="nav-link" aria-label="Customers">
+                        <span class="nav-icon">👥</span>
+                        Customers
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="employees.html" class="nav-link" aria-label="Employees">
+                        <span class="nav-icon">👤</span>
+                        Employees
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="invoice.html" class="nav-link" aria-label="Invoice and Billing">
+                        <span class="nav-icon">📄</span>
+                        Invoice & Billing
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="purchase.html" class="nav-link" aria-label="Purchase">
+                        <span class="nav-icon">🛒</span>
+                        Purchase
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="expense.html" class="nav-link" aria-label="Expense">
+                        <span class="nav-icon">💸</span>
+                        Expense
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="tasks.html" class="nav-link" aria-label="Task Assignment">
+                        <span class="nav-icon">✅</span>
+                        Task Assignment
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="payments.html" class="nav-link" aria-label="Payment Track">
+                        <span class="nav-icon">💳</span>
+                        Payment Track
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="website.html" class="nav-link" aria-label="Website Management">
+                        <span class="nav-icon">🌐</span>
+                        Website Management
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="ledger.html" class="nav-link" aria-label="Ledger">
+                        <span class="nav-icon">📚</span>
+                        Ledger
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="settings.html" class="nav-link" aria-label="Settings">
+                        <span class="nav-icon">⚙️</span>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="main-content">
+            <div class="page">
+                <div class="page-header">
+                    <h1 class="page-title">Inventory Management</h1>
+                    <p class="page-subtitle">Manage your products and stock levels</p>
+                </div>
+                <div class="cards-grid">
+                    <div class="card">
+                        <button class="btn btn-primary" onclick="showAddProductForm()" aria-label="Add New Product">
+                            ➕ Add New Product
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">⚠️</div>
+                            <div class="card-title">Low Stock Alert</div>
+                        </div>
+                        <div class="card-value" id="lowStockCount">0</div>
+                        <div class="card-description">Items need restocking (Stock ≤ 20)</div>
+                    </div>
+                </div>
+
+                <!-- Filter Section -->
+                <div class="filter-section">
+                    <div class="filter-group">
+                        <label class="filter-label" for="stockFilter">Filter by Stock Level:</label>
+                        <select class="filter-select" id="stockFilter">
+                            <option value="all">All Stock</option>
+                            <option value="low">Low Stock (≤ 20)</option>
+                            <option value="medium">Medium Stock (21 - 99)</option>
+                            <option value="high">High Stock (≥ 100)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="categoryFilter">Filter by Category:</label>
+                        <select class="filter-select" id="categoryFilter">
+                            <option value="all">All Categories</option>
+                            <!-- Categories will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                         <button class="btn btn-pdf" id="generatePdfBtn" aria-label="Generate PDF">
+                            📄 Generate PDF
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <h3 style="margin-bottom: 1rem; color: #374151;">Product Inventory</h3>
+                    <input type="text" class="form-input search-input" id="searchInput" placeholder="Search products..." aria-label="Search products">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Product Name</th>
+                                <th>SKU</th>
+                                <th>Category</th>
+                                <th>Stock</th>
+                                <th>Price (NPR)</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productTableBody">
+                            <!-- Product rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <button class="modal-close" aria-label="Close Modal">×</button>
+            <h2 id="modalTitle">Add New Product</h2>
+            <form id="productForm">
+                <div class="form-group">
+                    <label class="form-label">Product Name</label>
+                    <input type="text" class="form-input" id="productName" placeholder="Enter product name" aria-label="Product Name" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">SKU</label>
+                    <input type="text" class="form-input" id="productSKU" placeholder="Enter SKU" aria-label="SKU" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <input type="text" class="form-input" id="productCategory" placeholder="Enter category" aria-label="Category" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stock</label>
+                    <input type="number" class="form-input" id="productStock" placeholder="Enter stock quantity" aria-label="Stock Quantity" min="0" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Price (NPR)</label>
+                    <input type="number" step="0.01" class="form-input" id="productPrice" placeholder="Enter price in NPR" aria-label="Price in NPR" min="0" required />
+                </div>
+                <input type="hidden" id="productId">
+                <button type="submit" class="btn btn-primary" id="submitButton" aria-label="Save Product">Save Product</button>
+            </form>
+        </div>
+    </div>
+    <div class="connection-status" id="connectionStatus">Database connection lost. Retrying...</div>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCmJl82VktcyAZQYsMc_0Rw-2MxRNPBVUw",
+            authDomain: "shop-mgt.firebaseapp.com",
+            projectId: "shop-mgt",
+            storageBucket: "shop-mgt.appspot.com",
+            messagingSenderId: "577237698646",
+            appId: "1:577237698646:web:185d0aeb482eb7b70713f7",
+            measurementId: "G-D5YTD5M9HB",
+            databaseURL: "https://shop-mgt-default-rtdb.firebaseio.com/"
+        };
+
+        // Initialize Firebase
+        let database, productsRef;
+        try {
+            const app = firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            productsRef = database.ref('products');
+            console.log("Firebase initialized successfully");
+            // Test connection
+            database.ref('.info/connected').on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    console.log("Connected to Firebase Realtime Database");
+                    hideConnectionError();
+                    loadProducts();
+                } else {
+                    console.log("Not connected to Firebase Realtime Database");
+                    showConnectionError();
+                }
+            });
+        } catch (err) {
+            console.error("Firebase initialization error:", err);
+            showConnectionError();
+            alert("Failed to initialize Firebase. Please check your configuration.");
+        }
+
+        // Global variables for filtering
+        let allProductsData = {}; // Store all products data
+        let uniqueCategories = new Set(); // Store unique categories
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggleButton = document.querySelector('.sidebar-toggle');
+            const modal = document.getElementById('productModal');
+            const modalClose = document.querySelector('.modal-close');
+            const productForm = document.getElementById('productForm');
+            const productTableBody = document.getElementById('productTableBody');
+            const lowStockCount = document.getElementById('lowStockCount');
+            const searchInput = document.getElementById('searchInput');
+            const connectionStatus = document.getElementById('connectionStatus');
+            const stockFilterSelect = document.getElementById('stockFilter');
+            const categoryFilterSelect = document.getElementById('categoryFilter');
+            const generatePdfBtn = document.getElementById('generatePdfBtn');
+
+            // Sidebar toggle
+            toggleButton.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+            });
+
+            // Navigation link handling
+            const navLinks = document.querySelectorAll('.nav-link');
+            const currentPath = window.location.pathname.split('/').pop();
+            navLinks.forEach(link => {
+                link.classList.toggle('active', link.getAttribute('href') === currentPath);
+            });
+
+            // Modal handling
+            modalClose.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+
+            // Form submission
+            productForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                console.log("Form submission started");
+                if (!productsRef) {
+                    console.error("Database reference not initialized");
+                    alert('Database not initialized. Please try again later.');
+                    showConnectionError();
+                    return;
+                }
+                const button = document.getElementById('submitButton');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<span class="loading"></span> Saving...';
+                button.disabled = true;
+                const product = {
+                    name: document.getElementById('productName').value.trim(),
+                    sku: document.getElementById('productSKU').value.trim().toUpperCase(),
+                    category: document.getElementById('productCategory').value.trim(),
+                    stock: parseInt(document.getElementById('productStock').value) || 0,
+                    price: parseFloat(document.getElementById('productPrice').value) || 0,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+                console.log("Product data prepared:", product);
+                const productId = document.getElementById('productId').value;
+
+                // Input validation
+                if (!product.name || !product.sku || !product.category) {
+                    console.warn("Validation failed: Missing required fields");
+                    alert('Please fill in all required fields.');
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                    return;
+                }
+                if (product.stock < 0 || product.price < 0) {
+                    console.warn("Validation failed: Negative stock or price");
+                    alert('Stock and price cannot be negative.');
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                    return;
+                }
+                if (isNaN(product.price)) {
+                    console.warn("Validation failed: Invalid price");
+                    alert('Price must be a valid number.');
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                    return;
+                }
+
+                try {
+                    console.log("Attempting to save product...");
+                    if (productId) {
+                        console.log(`Updating existing product: ${productId}`);
+                        await productsRef.child(productId).update(product);
+                        console.log(`Product updated successfully: ${productId}`);
+                        alert('Product updated successfully!');
+                    } else {
+                        console.log("Adding new product");
+                        const newProductRef = productsRef.push();
+                        await newProductRef.set(product);
+                        console.log(`Product added successfully with ID: ${newProductRef.key}`);
+                        alert('Product added successfully!');
+                    }
+                    productForm.reset();
+                    document.getElementById('productId').value = '';
+                    document.getElementById('modalTitle').textContent = 'Add New Product';
+                    closeModal();
+                } catch (err) {
+                    console.error("Error saving product:", err);
+                    console.error("Error details:", {
+                        code: err.code,
+                        message: err.message,
+                        stack: err.stack
+                    });
+                    alert(`Failed to save product: ${err.message}. Check console for details.`);
+                    showConnectionError();
+                } finally {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }
+            });
+
+            // Filter event listeners
+            stockFilterSelect.addEventListener('change', applyFilters);
+            categoryFilterSelect.addEventListener('change', applyFilters);
+            searchInput.addEventListener('input', applyFilters); // Apply filters on search input
+
+            // PDF Generation
+            generatePdfBtn.addEventListener('click', generatePDF);
+
+            // Real-time product loading
+            function loadProducts() {
+                if (!productsRef) {
+                    console.error('Products reference not initialized');
+                    showConnectionError();
+                    return;
+                }
+                console.log('Setting up products listener');
+                productsRef.on('value', (snapshot) => {
+                    console.log('Loading products from database');
+                    allProductsData = snapshot.val() || {};
+                    updateCategoryFilter(); // Update categories based on loaded data
+                    applyFilters(); // Apply current filters to display data
+                    hideConnectionError();
+                }, (err) => {
+                    console.error('Error loading products:', err);
+                    alert(`Failed to load products: ${err.message}`);
+                    showConnectionError();
+                });
+            }
+
+             // Function to update the category filter dropdown
+            function updateCategoryFilter() {
+                uniqueCategories.clear(); // Clear previous categories
+                if (allProductsData) {
+                    Object.values(allProductsData).forEach(product => {
+                        if (product.category) {
+                             uniqueCategories.add(product.category.trim());
+                        }
+                    });
+                }
+                // Sort categories alphabetically
+                const sortedCategories = Array.from(uniqueCategories).sort();
+
+                // Populate the category filter dropdown
+                categoryFilterSelect.innerHTML = '<option value="all">All Categories</option>'; // Reset options
+                sortedCategories.forEach(category => {
+                     const option = document.createElement('option');
+                     option.value = category;
+                     option.textContent = category;
+                     categoryFilterSelect.appendChild(option);
+                });
+            }
+
+            // Function to apply all active filters (Stock, Category, Search)
+            function applyFilters() {
+                 const stockFilterValue = stockFilterSelect.value;
+                 const categoryFilterValue = categoryFilterSelect.value;
+                 const searchTerm = searchInput.value.toLowerCase();
+
+                 productTableBody.innerHTML = '';
+                 let lowStock = 0;
+                 let displayedProducts = 0;
+
+                 if (allProductsData) {
+                     Object.entries(allProductsData).forEach(([id, product]) => {
+                         // --- Apply Filters ---
+
+                         // 1. Stock Filter
+                         let stockMatch = false;
+                         const stock = product.stock || 0;
+                         if (stockFilterValue === 'all') {
+                             stockMatch = true;
+                         } else if (stockFilterValue === 'low' && stock <= 20) {
+                             stockMatch = true;
+                         } else if (stockFilterValue === 'medium' && stock > 20 && stock < 100) {
+                             stockMatch = true;
+                         } else if (stockFilterValue === 'high' && stock >= 100) {
+                             stockMatch = true;
+                         }
+
+                         // 2. Category Filter
+                         let categoryMatch = false;
+                         const productCategory = (product.category || '').trim().toLowerCase();
+                         if (categoryFilterValue === 'all' || productCategory === categoryFilterValue.toLowerCase()) {
+                             categoryMatch = true;
+                         }
+
+                         // 3. Search Filter
+                         let searchMatch = false;
+                         const searchText = `${product.name} ${product.sku} ${product.category}`.toLowerCase();
+                         if (searchTerm === '' || searchText.includes(searchTerm)) {
+                             searchMatch = true;
+                         }
+
+                         // If all filters match, display the product
+                         if (stockMatch && categoryMatch && searchMatch) {
+                             displayedProducts++;
+                             let statusClass = 'active';
+                             let statusText = 'Active';
+
+                             if (stock <= 20) {
+                                 statusClass = 'pending';
+                                 statusText = 'Low Stock';
+                                 lowStock++;
+                             } else if (stock > 20 && stock < 100) {
+                                 statusClass = 'medium';
+                                 statusText = 'Medium Stock';
+                             } else if (stock >= 100) {
+                                 statusClass = 'high';
+                                 statusText = 'High Stock';
+                             }
+
+                             const row = document.createElement('tr');
+                             const formattedPrice = product.price !== undefined ? `NPR ${product.price.toFixed(2)}` : 'NPR 0.00';
+                             row.innerHTML = `
+                                 <td>${product.name}</td>
+                                 <td>${product.sku}</td>
+                                 <td>${product.category}</td>
+                                 <td>${stock}</td>
+                                 <td>${formattedPrice}</td>
+                                 <td><span class="status-badge status-${statusClass}">${statusText}</span></td>
+                                 <td>
+                                     <button class="btn btn-secondary" onclick="editProduct('${id}')" aria-label="Edit ${product.name}">Edit</button>
+                                     <button class="btn btn-danger" onclick="deleteProduct('${id}', '${product.name}')" aria-label="Delete ${product.name}">Delete</button>
+                                 </td>
+                             `;
+                             productTableBody.appendChild(row);
+                         }
+                     });
+                     if (displayedProducts === 0) {
+                         productTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No products match the current filters.</td></tr>';
+                     }
+                 } else {
+                     productTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No products found. Add your first product!</td></tr>';
+                 }
+                 lowStockCount.textContent = lowStock;
+                 animateNumbers();
+            }
+
+            // Debug listeners for database changes (Optional, can be removed)
+            if (productsRef) {
+                productsRef.on('child_added', (snapshot) => {
+                    console.log('New product added:', snapshot.key, snapshot.val());
+                });
+                productsRef.on('child_changed', (snapshot) => {
+                    console.log('Product updated:', snapshot.key, snapshot.val());
+                });
+                productsRef.on('child_removed', (snapshot) => {
+                    console.log('Product removed:', snapshot.key);
+                });
+            }
+
+            // Edit product
+            window.editProduct = async function(id) {
+                if (!productsRef) {
+                    console.error("Database reference not initialized");
+                    alert('Database not initialized. Please try again later.');
+                    return;
+                }
+                try {
+                    const snapshot = await productsRef.child(id).once('value');
+                    const product = snapshot.val();
+                    if (product) {
+                        console.log('Editing product:', id, product);
+                        document.getElementById('modalTitle').textContent = 'Edit Product';
+                        document.getElementById('productName').value = product.name;
+                        document.getElementById('productSKU').value = product.sku;
+                        document.getElementById('productCategory').value = product.category;
+                        document.getElementById('productStock').value = product.stock;
+                        document.getElementById('productPrice').value = product.price;
+                        document.getElementById('productId').value = id;
+                        document.getElementById('submitButton').textContent = 'Update Product';
+                        showModal();
+                    } else {
+                        console.warn(`Product not found: ${id}`);
+                        alert('Product not found.');
+                    }
+                } catch (err) {
+                    console.error('Error loading product:', err);
+                    alert(`Failed to load product details: ${err.message}`);
+                    showConnectionError();
+                }
+            };
+
+            // Delete product
+            window.deleteProduct = async function(id, name) {
+                if (!productsRef) {
+                    console.error("Database reference not initialized");
+                    alert('Database not initialized. Please try again later.');
+                    return;
+                }
+                if (confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
+                    const button = event.target;
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<span class="loading"></span> Deleting...';
+                    button.disabled = true;
+                    try {
+                        await productsRef.child(id).remove();
+                        console.log(`Product deleted successfully: ${id}`);
+                        alert('Product deleted successfully!');
+                    } catch (err) {
+                        console.error('Error deleting product:', err);
+                        alert(`Failed to delete product: ${err.message}`);
+                        showConnectionError();
+                    } finally {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }
+                }
+            };
+
+            // Show Add Product Form
+            window.showAddProductForm = function() {
+                document.getElementById('modalTitle').textContent = 'Add New Product';
+                document.getElementById('productForm').reset();
+                document.getElementById('productId').value = '';
+                document.getElementById('submitButton').textContent = 'Save Product';
+                showModal();
+            };
+
+            function showModal() {
+                modal.style.display = 'flex';
+                document.getElementById('productName').focus();
+            }
+
+            function closeModal() {
+                modal.style.display = 'none';
+            }
+
+            function animateNumbers() {
+                const numberElements = document.querySelectorAll('.card-value');
+                numberElements.forEach(element => {
+                    const text = element.textContent;
+                    const number = parseInt(text.replace(/[^0-9]/g, '')) || 0;
+                    const prefix = text.replace(/[0-9,]/g, '');
+                    if (number > 0) {
+                        let current = 0;
+                        const increment = number / 50;
+                        const timer = setInterval(() => {
+                            current += increment;
+                            if (current >= number) {
+                                current = number;
+                                clearInterval(timer);
+                            }
+                            element.textContent = prefix + Math.floor(current).toLocaleString();
+                        }, 30);
+                    }
+                });
+            }
+
+            // Connection status handling
+            function showConnectionError() {
+                connectionStatus.style.display = 'block';
+            }
+
+            function hideConnectionError() {
+                connectionStatus.style.display = 'none';
+            }
+
+            // PDF Generation Function
+            function generatePDF() {
+                const { jsPDF } = window.jspdf;
+                const tableContainer = document.querySelector('.table-container');
+
+                if (!tableContainer) {
+                    alert("Table container not found!");
+                    return;
+                }
+
+                // Get filter values for the PDF title
+                const stockFilterText = stockFilterSelect.options[stockFilterSelect.selectedIndex].text;
+                const categoryFilterText = categoryFilterSelect.options[categoryFilterSelect.selectedIndex].text;
+                const searchTerm = searchInput.value;
+
+                // Create a title for the PDF
+                let pdfTitle = "Inventory Report";
+                if (stockFilterText !== "All Stock" || categoryFilterText !== "All Categories" || searchTerm) {
+                    pdfTitle += " - Filters: ";
+                    const filters = [];
+                    if (stockFilterText !== "All Stock") filters.push(stockFilterText);
+                    if (categoryFilterText !== "All Categories") filters.push(categoryFilterText);
+                    if (searchTerm) filters.push(`Search: "${searchTerm}"`);
+                    pdfTitle += filters.join(", ");
+                }
+
+
+                html2canvas(tableContainer, { scale: 2, useCORS: true }).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const imgWidth = 190; // A4 width minus margins
+                    const pageHeight = 280; // Approximate A4 height minus margins
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    let heightLeft = imgHeight;
+                    let position = 10; // Start position
+
+                    // Add title
+                    pdf.setFontSize(18);
+                    pdf.text(pdfTitle, 105, 15, null, null, 'center'); // Centered title
+
+                    // Add date
+                    const currentDate = new Date().toLocaleDateString();
+                    pdf.setFontSize(12);
+                    pdf.text(`Generated on: ${currentDate}`, 105, 25, null, null, 'center'); // Centered date below title
+
+                    // Add image
+                    pdf.addImage(imgData, 'PNG', 10, 30, imgWidth, imgHeight); // Start image below title/date
+                    heightLeft -= pageHeight;
+
+                    // Handle multi-page PDFs if needed (simple approach)
+                    while (heightLeft >= 0) {
+                        position = heightLeft - imgHeight;
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                        heightLeft -= pageHeight;
+                    }
+
+                    // Save the PDF
+                    pdf.save('inventory_report.pdf');
+                }).catch(err => {
+                    console.error("Error generating PDF:", err);
+                    alert("Failed to generate PDF. Please check the console for details.");
+                });
+            }
+
+            // Initialize the application
+            if (productsRef) {
+                loadProducts();
+            } else {
+                showConnectionError();
+            }
+        });
+    </script>
+</body>
+</html>

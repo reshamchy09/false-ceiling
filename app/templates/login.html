@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Login - Dhangadhi False Ceiling{% endblock %}
+{% block meta_description %}Log in to your Dhangadhi False Ceiling account to access personalized services, estimates, and more in Nepal.{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<section class="bg-light py-5">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold gradient-text mb-3 text-shadow" data-aos="fade-up">Login to Your Account</h1>
+        <nav aria-label="breadcrumb" data-aos="fade-up" data-aos-delay="100">
+            <ol class="breadcrumb justify-content-center bg-transparent">
+                <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-primary text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item active text-warning" aria-current="page">Login</li>
+            </ol>
+        </nav>
+    </div>
+</section>
+
+<!-- Login Form Section -->
+<section class="section-padding bg-white">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-5 col-md-7" data-aos="fade-up">
+                <div class="glass-card p-5">
+                    <h2 class="fw-bold mb-4 gradient-text text-center">Sign In</h2>
+
+                    <!-- Show Django messages -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form id="loginForm" method="POST" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold">Username</label>
+                            {{ form.username|add_class:"form-control" }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small">{{ form.username.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.password.id_for_label }}" class="form-label fw-semibold">Password</label>
+                            {{ form.password|add_class:"form-control" }}
+                            {% if form.password.errors %}
+                                <div class="text-danger small">{{ form.password.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom w-100 pulse-glow">Login</button>
+                    </form>
+
+                    <p class="text-center mt-3">Don't have an account?
+                        <a href="{% url 'signup' %}" class="text-primary text-decoration-none">Sign up</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="gradient-bg text-white text-center section-padding">
+    <div class="container">
+        <h2 class="display-5 fw-bold mb-4" data-aos="fade-up">Ready to Transform Your Space?</h2>
+        <p class="lead mb-4" data-aos="fade-up" data-aos-delay="100">Log in to get personalized estimates or contact our team for support!</p>
+        <div class="d-flex justify-content-center gap-3" data-aos="fade-up" data-aos-delay="200">
+            <a href="{% url 'estimate_calculator' %}" class="btn btn-primary-custom btn-lg pulse-glow d-block d-lg-inline">Get a Quote</a>
+            <a href="{% url 'contact' %}" class="btn btn-outline-light btn-lg d-block d-lg-inline">Contact Us</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('loginForm').addEventListener('submit', function () {
+        this.querySelector('button[type="submit"]').disabled = true;
+    });
+</script>
+{% endblock %}

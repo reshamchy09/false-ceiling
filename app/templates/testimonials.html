@@ -1,0 +1,921 @@
+{% extends 'base.html' %}
+
+{% block title %}Customer Testimonials - Dhangadhi False Ceiling{% endblock %}
+{% block meta_description %}Read what our satisfied customers say about our false ceiling services in Dhangadhi, Nepal. Share your own experience with us!{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<section class="bg-light py-5">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold gradient-text mb-3 text-shadow" data-aos="fade-up">Customer Testimonials</h1>
+        <p class="lead text-muted mb-4" data-aos="fade-up" data-aos-delay="50">Hear from our satisfied customers across Nepal</p>
+        <nav aria-label="breadcrumb" data-aos="fade-up" data-aos-delay="100">
+            <ol class="breadcrumb justify-content-center bg-transparent">
+                <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-primary text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item active text-warning" aria-current="page">Testimonials</li>
+            </ol>
+        </nav>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="py-4 bg-primary text-white">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 col-6 mb-3 mb-md-0" data-aos="fade-up" data-aos-delay="0">
+                <div class="stat-item">
+                    <h3 class="display-6 fw-bold mb-0">{{ testimonials.count|default:0 }}+</h3>
+                    <p class="mb-0 small">Happy Customers</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-3 mb-md-0" data-aos="fade-up" data-aos-delay="100">
+                <div class="stat-item">
+                    <h3 class="display-6 fw-bold mb-0">{{ average_rating|floatformat:1|default:"5.0" }}</h3>
+                    <p class="mb-0 small">Average Rating</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6" data-aos="fade-up" data-aos-delay="200">
+                <div class="stat-item">
+                    <h3 class="display-6 fw-bold mb-0">500+</h3>
+                    <p class="mb-0 small">Projects Done</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-6" data-aos="fade-up" data-aos-delay="300">
+                <div class="stat-item">
+                    <h3 class="display-6 fw-bold mb-0">100%</h3>
+                    <p class="mb-0 small">Satisfaction</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="section-padding bg-white">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold gradient-text mb-3" data-aos="fade-up">What Our Clients Say</h2>
+            <p class="text-muted lead" data-aos="fade-up" data-aos-delay="100">Real reviews from real customers who trust our services</p>
+        </div>
+        
+        {% if testimonials %}
+            <!-- Carousel for Desktop -->
+            <div class="swiper testimonials-carousel d-none d-md-block" data-aos="fade-up" data-aos-delay="200">
+                <div class="swiper-wrapper">
+                    {% for testimonial in testimonials %}
+                    <!-- Testimonial {{ forloop.counter }} -->
+                    <div class="swiper-slide">
+                        <div class="testimonial-card mx-auto h-100">
+                            <div class="card-body d-flex flex-column h-100">
+                                <!-- Quote Icon -->
+                                <div class="quote-icon mb-3">
+                                    <i class="fas fa-quote-left text-primary fa-2x opacity-50"></i>
+                                </div>
+                                
+                                <!-- Message -->
+                                <p class="text-muted flex-grow-1 mb-4">"{{ testimonial.message }}"</p>
+                                
+                                <!-- Rating -->
+                                <div class="star-rating mb-3 text-center">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= testimonial.rating %}
+                                            <i class="fas fa-star text-warning"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-muted"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Customer Info -->
+                                <div class="d-flex align-items-center justify-content-center">
+                                    {% if testimonial.image %}
+                                        <img src="{{ testimonial.image.url }}" class="rounded-circle me-3 border border-2 border-primary" alt="{{ testimonial.name }}" style="width: 60px; height: 60px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="rounded-circle me-3 bg-gradient-primary d-flex align-items-center justify-content-center text-white fw-bold border border-2 border-white shadow" style="width: 60px; height: 60px; font-size: 20px;">
+                                            {{ testimonial.name|slice:":1"|upper }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="text-center">
+                                        <h6 class="fw-bold mb-1 text-dark">{{ testimonial.name }}</h6>
+                                        {% if testimonial.location %}
+                                            <p class="text-muted small mb-0">
+                                                <i class="fas fa-map-marker-alt me-1"></i>{{ testimonial.location }}
+                                            </p>
+                                        {% endif %}
+                                        <p class="text-primary small mb-0">
+                                            <i class="fas fa-check-circle me-1"></i>Verified Customer
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <!-- Carousel Navigation -->
+                <div class="swiper-button-next"></div>
+                <div class="swiper-button-prev"></div>
+                <div class="swiper-pagination mt-4"></div>
+            </div>
+
+            <!-- Grid for Mobile -->
+            <div class="row g-4 d-md-none">
+                {% for testimonial in testimonials %}
+                <!-- Testimonial {{ forloop.counter }} -->
+                <div class="col-12" data-aos="fade-up" data-aos-delay="{% widthratio forloop.counter0 1 100 %}">
+                    <div class="testimonial-card h-100">
+                        <div class="card-body">
+                            <!-- Quote Icon -->
+                            <div class="quote-icon mb-3">
+                                <i class="fas fa-quote-left text-primary fa-2x opacity-50"></i>
+                            </div>
+                            
+                            <!-- Message -->
+                            <p class="text-muted mb-4">"{{ testimonial.message }}"</p>
+                            
+                            <!-- Rating -->
+                            <div class="star-rating mb-3">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= testimonial.rating %}
+                                        <i class="fas fa-star text-warning"></i>
+                                    {% else %}
+                                        <i class="far fa-star text-muted"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Customer Info -->
+                            <div class="d-flex align-items-center">
+                                {% if testimonial.image %}
+                                    <img src="{{ testimonial.image.url }}" class="rounded-circle me-3 border border-2 border-primary" alt="{{ testimonial.name }}" style="width: 50px; height: 50px; object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle me-3 bg-gradient-primary d-flex align-items-center justify-content-center text-white fw-bold border border-2 border-white shadow" style="width: 50px; height: 50px; font-size: 18px;">
+                                        {{ testimonial.name|slice:":1"|upper }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="fw-bold mb-1 text-dark">{{ testimonial.name }}</h6>
+                                    {% if testimonial.location %}
+                                        <p class="text-muted small mb-1">
+                                            <i class="fas fa-map-marker-alt me-1"></i>{{ testimonial.location }}
+                                        </p>
+                                    {% endif %}
+                                    <p class="text-primary small mb-0">
+                                        <i class="fas fa-check-circle me-1"></i>Verified Customer
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- No testimonials message -->
+            <div class="text-center py-5" data-aos="fade-up">
+                <div class="mb-4">
+                    <i class="fas fa-comments fa-4x text-muted opacity-50"></i>
+                </div>
+                <h3 class="text-muted mb-3">No testimonials yet</h3>
+                <p class="text-muted mb-4">Be the first to share your experience with us!</p>
+                <a href="#testimonial-form" class="btn btn-primary-custom btn-lg smooth-scroll">
+                    <i class="fas fa-edit me-2"></i>Write First Review
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Trust Indicators -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6" data-aos="fade-right">
+                <h3 class="fw-bold mb-3 gradient-text">Why Customers Trust Us</h3>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                <div class="bg-primary rounded-circle p-2">
+                                    <i class="fas fa-award text-white"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Quality Assured</h6>
+                                <small class="text-muted">Premium materials only</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                <div class="bg-success rounded-circle p-2">
+                                    <i class="fas fa-clock text-white"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">On-Time Delivery</h6>
+                                <small class="text-muted">Always meet deadlines</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                <div class="bg-warning rounded-circle p-2">
+                                    <i class="fas fa-tools text-white"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Expert Team</h6>
+                                <small class="text-muted">Skilled professionals</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                <div class="bg-info rounded-circle p-2">
+                                    <i class="fas fa-shield-alt text-white"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Warranty</h6>
+                                <small class="text-muted">Long-term support</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6" data-aos="fade-left">
+                <div class="text-center p-4">
+                    <div class="bg-white rounded-circle mx-auto mb-3 shadow-lg d-inline-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
+                        <i class="fas fa-handshake fa-3x text-primary"></i>
+                    </div>
+                    <h4 class="fw-bold text-primary">Trusted by 500+ Families</h4>
+                    <p class="text-muted">Across Dhangadhi and surrounding areas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Submit Testimonial Form -->
+<section class="section-padding bg-white" id="testimonial-form">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8" data-aos="fade-up">
+                <div class="glass-card p-5 shadow-lg">
+                    <div class="text-center mb-4">
+                        <div class="bg-primary rounded-circle mx-auto mb-3 d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                            <i class="fas fa-star fa-2x text-white"></i>
+                        </div>
+                        <h2 class="fw-bold gradient-text">Share Your Experience</h2>
+                        <p class="text-muted">Help others by sharing your experience with our services</p>
+                    </div>
+                    
+                    <!-- Display messages -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+                                {% if message.tags == 'success' %}
+                                    <i class="fas fa-check-circle me-2"></i>
+                                {% elif message.tags == 'error' %}
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                {% else %}
+                                    <i class="fas fa-info-circle me-2"></i>
+                                {% endif %}
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form id="testimonialForm" action="{% url 'testimonials' %}" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label for="name" class="form-label fw-semibold">
+                                    <i class="fas fa-user text-primary me-1"></i>Full Name
+                                </label>
+                                <input type="text" class="form-control form-control-lg {% if form.name.errors %}is-invalid{% endif %}" 
+                                       id="name" name="name" placeholder="Enter your full name" 
+                                       value="{{ form.name.value|default:'' }}" required>
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.name.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-4">
+                                <label for="location" class="form-label fw-semibold">
+                                    <i class="fas fa-map-marker-alt text-primary me-1"></i>Location <small class="text-muted">(Optional)</small>
+                                </label>
+                                <input type="text" class="form-control form-control-lg {% if form.location.errors %}is-invalid{% endif %}" 
+                                       id="location" name="location" placeholder="Your City/Location" 
+                                       value="{{ form.location.value|default:'' }}">
+                                {% if form.location.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.location.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="rating" class="form-label fw-semibold">
+                                <i class="fas fa-star text-primary me-1"></i>Rating
+                            </label>
+                            <select class="form-select form-select-lg {% if form.rating.errors %}is-invalid{% endif %}" 
+                                    id="rating" name="rating" required>
+                                <option value="" disabled {% if not form.rating.value %}selected{% endif %}>Select your rating</option>
+                                <option value="5" {% if form.rating.value == "5" %}selected{% endif %}>⭐⭐⭐⭐⭐ Excellent</option>
+                                <option value="4" {% if form.rating.value == "4" %}selected{% endif %}>⭐⭐⭐⭐ Very Good</option>
+                                <option value="3" {% if form.rating.value == "3" %}selected{% endif %}>⭐⭐⭐ Good</option>
+                                <option value="2" {% if form.rating.value == "2" %}selected{% endif %}>⭐⭐ Fair</option>
+                                <option value="1" {% if form.rating.value == "1" %}selected{% endif %}>⭐ Poor</option>
+                            </select>
+                            {% if form.rating.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.rating.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="message" class="form-label fw-semibold">
+                                <i class="fas fa-comment text-primary me-1"></i>Your Review
+                            </label>
+                            <textarea class="form-control form-control-lg {% if form.message.errors %}is-invalid{% endif %}" 
+                                      id="message" name="message" rows="5" 
+                                      placeholder="Tell us about your experience. What did you like most? How was our service? Any suggestions?" required>{{ form.message.value|default:'' }}</textarea>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Minimum 20 characters. Be specific about what you liked.
+                            </div>
+                            {% if form.message.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.message.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="image" class="form-label fw-semibold">
+                                <i class="fas fa-camera text-primary me-1"></i>Your Photo <small class="text-muted">(Optional)</small>
+                            </label>
+                            <input type="file" class="form-control form-control-lg {% if form.image.errors %}is-invalid{% endif %}" 
+                                   id="image" name="image" accept="image/jpeg,image/jpg,image/png,image/gif">
+                            <div class="form-text">
+                                <i class="fas fa-upload me-1"></i>
+                                Upload your photo (JPG, PNG, GIF - Max 5MB). This helps build trust with other customers.
+                            </div>
+                            {% if form.image.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.image.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Image Preview -->
+                        <div id="imagePreview" class="mb-4 d-none">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <img id="previewImg" src="" alt="Preview" class="img-thumbnail" style="max-width: 150px; max-height: 150px;">
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeImagePreview()">
+                                            <i class="fas fa-trash me-1"></i>Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary-custom btn-lg w-100 shadow-lg" onclick="showLoading('testimonialForm')">
+                            <span class="btn-text">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Review
+                            </span>
+                            <span class="btn-loading d-none">
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                Submitting your review...
+                            </span>
+                        </button>
+                        
+                        <div class="mt-4 text-center">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <small class="text-muted d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-shield-alt text-success me-1"></i>
+                                        Secure & Private
+                                    </small>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-eye text-info me-1"></i>
+                                        Reviewed before publishing
+                                    </small>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-clock text-warning me-1"></i>
+                                        Published within 24hrs
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="gradient-bg text-white text-center section-padding position-relative overflow-hidden">
+    <!-- Background Pattern -->
+    <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10">
+        <div class="row g-0 h-100">
+            <div class="col-12">
+                <div class="d-flex align-items-center justify-content-center h-100">
+                    <i class="fas fa-home fa-10x opacity-25"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container position-relative">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h2 class="display-5 fw-bold mb-4" data-aos="fade-up">Ready for Your Dream Ceiling?</h2>
+                <p class="lead mb-5" data-aos="fade-up" data-aos-delay="100">
+                    Join hundreds of satisfied customers who transformed their spaces with our expert false ceiling solutions!
+                </p>
+                <div class="d-flex flex-column flex-lg-row justify-content-center gap-3 mb-4" data-aos="fade-up" data-aos-delay="200">
+                    <a href="{% url 'contact' %}" class="btn btn-light btn-lg shadow-lg pulse-glow">
+                        <i class="fas fa-calculator me-2"></i>Get Free Quote
+                    </a>
+                    <a href="{% url 'myservices' %}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-eye me-2"></i>View Our Services
+                    </a>
+                    <a href="tel:+977-XXX-XXXX" class="btn btn-success btn-lg">
+                        <i class="fas fa-phone me-2"></i>Call Now
+                    </a>
+                </div>
+                <div class="d-flex justify-content-center align-items-center gap-4 text-sm" data-aos="fade-up" data-aos-delay="300">
+                    <span><i class="fas fa-check-circle me-1"></i>Free Consultation</span>
+                    <span><i class="fas fa-check-circle me-1"></i>Same Day Quote</span>
+                    <span><i class="fas fa-check-circle me-1"></i>Quality Guarantee</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Ensure Swiper initializes after DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', function () {
+        // Only initialize Swiper if testimonials exist
+        const swiperContainer = document.querySelector('.testimonials-carousel');
+        if (swiperContainer && document.querySelectorAll('.swiper-slide').length > 0) {
+            const slideCount = document.querySelectorAll('.swiper-slide').length;
+            const swiper = new Swiper('.testimonials-carousel', {
+                slidesPerView: Math.min(3, slideCount),
+                spaceBetween: 30,
+                loop: slideCount > 3, // Only loop if more than 3 slides
+                autoplay: slideCount > 1 ? {
+                    delay: 5000,
+                    disableOnInteraction: false,
+                } : false,
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                    dynamicBullets: true,
+                },
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+                breakpoints: {
+                    0: {
+                        slidesPerView: 1,
+                    },
+                    768: {
+                        slidesPerView: Math.min(2, slideCount),
+                    },
+                    992: {
+                        slidesPerView: Math.min(3, slideCount),
+                    },
+                },
+                // Auto-adjust height
+                autoHeight: true,
+                // Effects
+                effect: 'slide',
+                speed: 800,
+                // Events
+                on: {
+                    init: function () {
+                        console.log('Testimonials carousel initialized');
+                    }
+                }
+            });
+        }
+    });
+
+    // Enhanced form submission with loading state
+    document.getElementById('testimonialForm').addEventListener('submit', function (e) {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const btnLoading = submitBtn.querySelector('.btn-loading');
+        
+        // Validate form before showing loading
+        if (!this.checkValidity()) {
+            return;
+        }
+        
+        // Show loading state
+        btnText.classList.add('d-none');
+        btnLoading.classList.remove('d-none');
+        submitBtn.disabled = true;
+        
+        // Reset button state after form submission (in case of errors)
+        setTimeout(() => {
+            btnText.classList.remove('d-none');
+            btnLoading.classList.add('d-none');
+            submitBtn.disabled = false;
+        }, 10000); // Reset after 10 seconds if no response
+    });
+
+    // Auto-dismiss alerts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            setTimeout(function() {
+                if (alert && alert.parentNode) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            }, 5000);
+        });
+    });
+
+    // Enhanced image preview functionality
+    document.getElementById('image').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const previewContainer = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        
+        if (file) {
+            // Check file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size must be less than 5MB');
+                this.value = '';
+                previewContainer.classList.add('d-none');
+                return;
+            }
+            
+            // Check file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Please select a valid image file (JPG, PNG, or GIF)');
+                this.value = '';
+                previewContainer.classList.add('d-none');
+                return;
+            }
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewContainer.classList.remove('d-none');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            previewContainer.classList.add('d-none');
+        }
+    });
+
+    // Remove image preview
+    function removeImagePreview() {
+        document.getElementById('image').value = '';
+        document.getElementById('imagePreview').classList.add('d-none');
+    }
+
+    // Smooth scroll for internal links
+    document.addEventListener('DOMContentLoaded', function() {
+        const smoothScrollLinks = document.querySelectorAll('.smooth-scroll');
+        smoothScrollLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    });
+
+    // Character counter for textarea
+    document.getElementById('message').addEventListener('input', function() {
+        const maxLength = 500;
+        const currentLength = this.value.length;
+        const minLength = 20;
+        
+        // Create or update character counter
+        let counter = document.getElementById('char-counter');
+        if (!counter) {
+            counter = document.createElement('div');
+            counter.id = 'char-counter';
+            counter.className = 'form-text text-end mt-1';
+            this.parentNode.appendChild(counter);
+        }
+        
+        // Update counter text and color
+        if (currentLength < minLength) {
+            counter.innerHTML = `<span class="text-warning">Minimum ${minLength} characters required (${currentLength}/${minLength})</span>`;
+        } else if (currentLength > maxLength) {
+            counter.innerHTML = `<span class="text-danger">Maximum ${maxLength} characters allowed (${currentLength}/${maxLength})</span>`;
+            this.value = this.value.substring(0, maxLength);
+        } else {
+            counter.innerHTML = `<span class="text-success">${currentLength} characters (looks good!)</span>`;
+        }
+    });
+
+    // Form validation enhancement
+    (function() {
+        'use strict';
+        window.addEventListener('load', function() {
+            const form = document.getElementById('testimonialForm');
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    const messageField = document.getElementById('message');
+                    if (messageField.value.length < 20) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        messageField.setCustomValidity('Please write at least 20 characters for your review.');
+                    } else {
+                        messageField.setCustomValidity('');
+                    }
+                    
+                    form.classList.add('was-validated');
+                }, false);
+            }
+        }, false);
+    })();
+
+    // Rating select enhancement with visual feedback
+    document.getElementById('rating').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const ratingValue = this.value;
+        
+        // Add visual feedback
+        this.className = this.className.replace(/border-\w+/g, '');
+        if (ratingValue >= 4) {
+            this.classList.add('border-success');
+        } else if (ratingValue >= 3) {
+            this.classList.add('border-warning');
+        } else {
+            this.classList.add('border-danger');
+        }
+        
+        // Show appreciation message
+        let feedback = document.getElementById('rating-feedback');
+        if (!feedback) {
+            feedback = document.createElement('div');
+            feedback.id = 'rating-feedback';
+            feedback.className = 'form-text mt-1';
+            this.parentNode.appendChild(feedback);
+        }
+        
+        switch(ratingValue) {
+            case '5':
+                feedback.innerHTML = '<i class="fas fa-heart text-danger me-1"></i><span class="text-success">Thank you! We\'re thrilled you loved our service!</span>';
+                break;
+            case '4':
+                feedback.innerHTML = '<i class="fas fa-thumbs-up text-primary me-1"></i><span class="text-primary">Great! We appreciate your positive feedback!</span>';
+                break;
+            case '3':
+                feedback.innerHTML = '<i class="fas fa-smile text-warning me-1"></i><span class="text-warning">Thanks! We\'d love to know how we can improve.</span>';
+                break;
+            case '2':
+            case '1':
+                feedback.innerHTML = '<i class="fas fa-comment-dots text-info me-1"></i><span class="text-info">We value your feedback and will work to improve.</span>';
+                break;
+        }
+    });
+
+    // Loading state helper function
+    function showLoading(formId) {
+        const form = document.getElementById(formId);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const btnLoading = submitBtn.querySelector('.btn-loading');
+        
+        if (form.checkValidity()) {
+            btnText.classList.add('d-none');
+            btnLoading.classList.remove('d-none');
+            submitBtn.disabled = true;
+        }
+    }
+
+    // Add testimonial card hover effects
+    document.addEventListener('DOMContentLoaded', function() {
+        const testimonialCards = document.querySelectorAll('.testimonial-card');
+        testimonialCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+                this.style.transition = 'all 0.3s ease';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+
+    // Add success animation after form submission
+    window.addEventListener('load', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('success') === 'true') {
+            // Show success animation
+            const successModal = document.createElement('div');
+            successModal.innerHTML = `
+                <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow-lg">
+                            <div class="modal-body text-center p-5">
+                                <div class="mb-4">
+                                    <i class="fas fa-check-circle fa-4x text-success"></i>
+                                </div>
+                                <h3 class="fw-bold text-success mb-3">Thank You!</h3>
+                                <p class="text-muted mb-4">Your testimonial has been submitted successfully and will be reviewed before publishing.</p>
+                                <button type="button" class="btn btn-primary" onclick="this.closest('.modal').remove()">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(successModal);
+            
+            // Auto-close after 5 seconds
+            setTimeout(() => {
+                if (successModal.parentNode) {
+                    successModal.remove();
+                }
+            }, 5000);
+        }
+    });
+</script>
+
+<!-- Additional CSS for enhanced styling -->
+<style>
+    .testimonial-card {
+        background: #fff;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        border: 1px solid #f0f0f0;
+        transition: all 0.3s ease;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .testimonial-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(45deg, #007bff, #28a745);
+    }
+    
+    .testimonial-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    }
+    
+    .quote-icon {
+        text-align: center;
+    }
+    
+    .star-rating i {
+        font-size: 1.1rem;
+        margin: 0 2px;
+    }
+    
+    .glass-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .gradient-text {
+        background: linear-gradient(45deg, #007bff, #28a745);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .gradient-bg {
+        background: linear-gradient(135deg, #007bff, #28a745, #ffc107);
+        background-size: 300% 300%;
+        animation: gradientShift 8s ease infinite;
+    }
+    
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    .pulse-glow {
+        animation: pulseGlow 2s infinite;
+    }
+    
+    @keyframes pulseGlow {
+        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
+        70% { box-shadow: 0 0 0 20px rgba(255,255,255,0); }
+        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+    }
+    
+    .stat-item {
+        padding: 1rem;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(5px);
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    }
+    
+    .btn-primary-custom {
+        background: linear-gradient(45deg, #007bff, #28a745);
+        border: none;
+        border-radius: 50px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        background: linear-gradient(45deg, #0056b3, #1e7e34);
+    }
+    
+    .swiper-button-next, .swiper-button-prev {
+        color: #007bff;
+        background: white;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .swiper-button-next:after, .swiper-button-prev:after {
+        font-size: 18px;
+        font-weight: bold;
+    }
+    
+    .swiper-pagination-bullet {
+        background: #007bff;
+        opacity: 0.3;
+    }
+    
+    .swiper-pagination-bullet-active {
+        opacity: 1;
+        background: #007bff;
+    }
+    
+    @media (max-width: 768px) {
+        .testimonial-card {
+            padding: 1.5rem;
+        }
+        
+        .glass-card {
+            padding: 2rem !important;
+        }
+        
+        .display-4 {
+            font-size: 2.5rem;
+        }
+        
+        .display-5 {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
