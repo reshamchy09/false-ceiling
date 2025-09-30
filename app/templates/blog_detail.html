@@ -116,6 +116,42 @@
                     </div>
                 </article>
                 
+<<<<<<< HEAD
+=======
+                <!-- Author Bio -->
+                {% if post.author %}
+                <div class="author-bio mt-5 p-4 bg-light rounded" data-aos="fade-up">
+                    <div class="row align-items-center">
+                        <div class="col-md-3 text-center mb-3 mb-md-0">
+                            <img src="{{ post.author.profile.avatar.url|default:'/static/images/default-avatar.jpg' }}" 
+                                 class="rounded-circle" alt="{{ post.author.get_full_name }}" 
+                                 style="width: 100px; height: 100px; object-fit: cover;">
+                        </div>
+                        <div class="col-md-9">
+                            <h5 class="mb-2">{{ post.author.get_full_name|default:post.author.username }}</h5>
+                            <p class="text-muted mb-3">{{ post.author.profile.bio|default:"Expert in false ceiling design and installation with years of experience in transforming spaces." }}</p>
+                            <div class="d-flex gap-2">
+                                {% if post.author.profile.facebook %}
+                                <a href="{{ post.author.profile.facebook }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <i class="fab fa-facebook-f"></i>
+                                </a>
+                                {% endif %}
+                                {% if post.author.profile.twitter %}
+                                <a href="{{ post.author.profile.twitter }}" class="btn btn-sm btn-outline-info" target="_blank">
+                                    <i class="fab fa-twitter"></i>
+                                </a>
+                                {% endif %}
+                                {% if post.author.profile.linkedin %}
+                                <a href="{{ post.author.profile.linkedin }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                    <i class="fab fa-linkedin-in"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
                 
                 <!-- Related Posts -->
                 {% if related_posts %}
@@ -153,6 +189,7 @@
                             <div class="card-body p-4">
                                 <h6 class="mb-3">Leave a Comment</h6>
                                 <form method="POST" action="{% url 'add_comment' post.slug %}">
+<<<<<<< HEAD
                                        {% csrf_token %}
                                    <input type="text" name="name" placeholder="Your name" required><br>
                                   <input type="email" name="email" placeholder="Your email" required><br>
@@ -160,6 +197,24 @@
                                   <button type="submit">Post Comment</button>
                                 </form>
 
+=======
+                                    {% csrf_token %}
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <input type="text" name="name" class="form-control" placeholder="Your Name" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <input type="email" name="email" class="form-control" placeholder="Your Email" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <textarea name="message" class="form-control" rows="4" placeholder="Your comment..." required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary-custom">
+                                        <i class="fas fa-paper-plane me-2"></i>Post Comment
+                                    </button>
+                                </form>
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
                             </div>
                         </div>
                     </div>
@@ -179,7 +234,11 @@
                                         <h6 class="mb-0">{{ comment.name }}</h6>
                                         <small class="text-muted">{{ comment.created_at|date:"M d, Y - g:i A" }}</small>
                                     </div>
+<<<<<<< HEAD
                                     <p class="mb-0">{{ comment.body }}</p>
+=======
+                                    <p class="mb-0">{{ comment.message }}</p>
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
                                     
                                     <!-- Reply button (for future implementation) -->
                                     <button class="btn btn-sm btn-link text-primary p-0 mt-2">
@@ -256,9 +315,38 @@
                         </div>
                     </div>
                     
+<<<<<<< HEAD
                     <!-- Contact CTA -->
                     <div class="card border-0 shadow-sm" data-aos="fade-left" data-aos-delay="400">
                         <div class="card-body text-center p-4">
+=======
+                    <!-- Categories -->
+                    <div class="card border-0 shadow-sm mb-4" data-aos="fade-left" data-aos-delay="300">
+                        <div class="card-header bg-transparent border-0 pb-0">
+                            <h6 class="mb-0"><i class="fas fa-folder-open me-2 text-primary"></i>Categories</h6>
+                        </div>
+                        <div class="card-body pt-3">
+                            <ul class="list-unstyled">
+                                {% for category in categories %}
+                                <li class="mb-2">
+                                    <a href="{% url 'blog' %}?category={{ category.slug }}" 
+                                       class="text-decoration-none d-flex justify-content-between align-items-center p-2 rounded hover-bg-light">
+                                        <span>{{ category.name }}</span>
+                                        <span class="badge bg-light text-dark">{{ category.post_count|default:0 }}</span>
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Contact CTA -->
+                    <div class="card border-0 shadow-sm" data-aos="fade-left" data-aos-delay="400">
+                        <div class="card-body text-center p-4">
+                            <div class="gradient-bg text-white rounded-3 p-3 mb-3">
+                                <i class="fas fa-tools fa-2x"></i>
+                            </div>
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
                             <h5 class="card-title">Ready to Start Your Project?</h5>
                             <p class="text-muted small mb-3">Get professional false ceiling installation with our expert team.</p>
                             <div class="d-grid gap-2">
@@ -583,6 +671,7 @@
         transform: translateX(5px);
         box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     }
+<<<<<<< HEAD
 
     /* Comment form container */
 .comment-form {
@@ -648,6 +737,8 @@
     background: #357abd;
 }
 
+=======
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
     
     .toc-link {
         transition: all 0.3s ease;

@@ -54,6 +54,7 @@
                 <div class="featured-article mb-5" data-aos="fade-up">
                     <div class="card border-0 shadow-lg overflow-hidden">
                         <div class="position-relative">
+<<<<<<< HEAD
                             {% if post.image %}
                                  <img src="{{ post.image.url }}" 
                                  class="card-img-top" alt="{{ post.title }}" 
@@ -65,6 +66,10 @@
                              <i class="fas fa-image fa-3x text-white"></i>
                              </div>
                             {% endif %}
+=======
+                            <img src="{{ featured_post.image.url|default:'/static/images/blog/default-blog.jpg' }}" 
+                                 class="card-img-top" alt="{{ featured_post.title }}" style="height: 300px; object-fit: cover;">
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
                             <div class="position-absolute top-0 start-0 m-3">
                                 <span class="badge bg-primary fs-6">Featured</span>
                             </div>
@@ -115,6 +120,7 @@
                 <!-- Blog Posts Grid -->
                 <div class="row">
                     {% for post in posts %}
+<<<<<<< HEAD
                     <div class="col-md-6 mb-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:100 }}">
                         <article class="card h-100 border-0 shadow card-hover">
                             <div class="position-relative overflow-hidden">
@@ -127,6 +133,13 @@
                                          class="card-img-top" alt="{{ post.title }}" 
                                          style="height: 200px; object-fit: cover;">
                                 {% endif %}
+=======
+            
+                        <article class="card h-100 border-0 shadow card-hover">
+                            <div class="position-relative overflow-hidden">
+                                <img src="{{ post.image.url|default:'/static/images/blog/default-blog.jpg' }}" 
+                                     class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
                                 {% if post.category %}
                                 <div class="position-absolute top-0 start-0 m-3">
                                     <span class="badge bg-secondary">{{ post.category.name }}</span>
@@ -265,6 +278,7 @@
                         <div class="card-body pt-3">
                             {% for post in recent_posts %}
                             <div class="d-flex mb-3">
+<<<<<<< HEAD
                                 {% if post.image %}
                                     <img src="{{ post.image.url }}" 
                                          class="rounded me-3" alt="{{ post.title }}" 
@@ -274,6 +288,11 @@
                                          class="rounded me-3" alt="{{ post.title }}" 
                                          style="width: 60px; height: 60px; object-fit: cover;">
                                 {% endif %}
+=======
+                                <img src="{{ post.image.url|default:'/static/images/blog/default-blog.jpg' }}" 
+                                     class="rounded me-3" alt="{{ post.title }}" 
+                                     style="width: 60px; height: 60px; object-fit: cover;">
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
                                 <div class="flex-grow-1">
                                     <h6 class="mb-1">
                                         <a href="{% url 'blog_detail' post.slug %}" class="text-decoration-none text-dark">
@@ -499,6 +518,7 @@
         color: white;
         transform: translateY(-1px);
     }
+<<<<<<< HEAD
     
     .card-hover {
         transition: all 0.3s ease;
@@ -508,5 +528,7 @@
         transform: translateY(-5px);
         box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
     }
+=======
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
 </style>
 {% endblock %}

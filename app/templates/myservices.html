@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<<<<<<< HEAD
 <!-- Modern Hero Header with Gradient -->
 <section class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 100px 0 80px;">
     <div class="position-absolute top-0 start-0 w-100 h-100" 
@@ -15,11 +16,20 @@
             <a href="/" class="text-decoration-none text-white me-2 hover-opacity">Home</a>
             <span class="text-white-50 mx-2">›</span>
             <span class="text-white">Services</span>
+=======
+<!-- Page Header / Banner (Bootstrap version) -->
+<section class="py-5 bg-light">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold text-dark mb-3">Our Services</h1>
+        <nav class="text-muted">
+            <a href="/" class="text-decoration-none text-primary">Home</a> &gt; <span>Services</span>
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
         </nav>
     </div>
 </section>
 
 <!-- Portfolio Section -->
+<<<<<<< HEAD
 <section class="py-5 bg-light">
     <div class="container py-4">
 
@@ -91,10 +101,52 @@
                 <p class="text-muted fs-5">No projects found for this category.</p>
             </div>
             {% endfor %}
+=======
+<section class="section-padding bg-white">
+    <div class="container">
+
+        <!-- Filter Tabs -->
+        <div class="d-flex justify-content-center mb-5" data-aos="fade-up">
+            <ul class="nav nav-pills gap-2" id="portfolioTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link px-4 py-2 rounded-pill {% if selected_category == 'all' %}active{% endif %}" href="?category=all">All</a>
+                </li>
+                {% for value, label in categories %}
+                <li class="nav-item">
+                    <a class="nav-link px-4 py-2 rounded-pill {% if selected_category == value %}active{% endif %}" href="?category={{ value }}">{{ label }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Portfolio Grid -->
+        <div class="tab-pane fade show active">
+            <div class="row g-4 masonry-grid">
+                {% for myproject in projects %}
+                <div class="col-md-6 col-lg-4 masonry-item" data-aos="fade-up" data-aos-delay="{{ forloop.counter|add:'15' }}">
+                    <div class="card card-hover">
+                        <img src="{{ myproject.image.url }}" class="card-img-top" alt="{{ myproject.title }}">
+                        <div class="card-body text-center">
+                            <h5 class="fw-bold">Name: {{ myproject.title }}</h5>
+                            <p class="mb-2"><strong>Category:</strong> {{ myproject.get_category_display }}</p>
+                              <p class="mb-2"><strong>Descriptiony:</strong> {{ myproject.description }}</p>
+                            <p class="mb-2"><strong>Price/Sqft:</strong> Rs. {{ myproject.price_per_sqft }}</p>
+                            <a href="{{ myproject.image.url }}" class="btn btn-primary-custom btn-sm" data-lightbox="portfolio" data-title="{{ myproject.title }}">View Full Image</a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center">
+                    <p>No projects found for this category.</p>
+                </div>
+                {% endfor %}
+            </div>
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
         </div>
 
         <!-- Pagination -->
         {% if projects.has_other_pages %}
+<<<<<<< HEAD
         <nav aria-label="Page navigation" class="mt-5" data-aos="fade-up">
             <ul class="pagination justify-content-center gap-2">
                 {% if projects.has_previous %}
@@ -111,14 +163,30 @@
                        href="?category={{ selected_category }}&page={{ num }}">
                         {{ num }}
                     </a>
+=======
+        <nav aria-label="Page navigation" class="mt-5">
+            <ul class="pagination justify-content-center">
+                {% if projects.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?category={{ selected_category }}&page={{ projects.previous_page_number }}">&laquo;</a>
+                </li>
+                {% endif %}
+                {% for num in projects.paginator.page_range %}
+                <li class="page-item {% if projects.number == num %}active{% endif %}">
+                    <a class="page-link" href="?category={{ selected_category }}&page={{ num }}">{{ num }}</a>
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
                 </li>
                 {% endfor %}
                 {% if projects.has_next %}
                 <li class="page-item">
+<<<<<<< HEAD
                     <a class="page-link border-0 rounded-circle shadow-sm" 
                        href="?category={{ selected_category }}&page={{ projects.next_page_number }}">
                         →
                     </a>
+=======
+                    <a class="page-link" href="?category={{ selected_category }}&page={{ projects.next_page_number }}">&raquo;</a>
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
                 </li>
                 {% endif %}
             </ul>
@@ -128,6 +196,7 @@
 </section>
 
 <!-- CTA Section -->
+<<<<<<< HEAD
 <section class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 100px 0;">
     <div class="container text-center position-relative">
         <h2 class="display-5 fw-bold text-white mb-4">Need Custom Ceiling Design?</h2>
@@ -155,3 +224,15 @@
     .hover-opacity:hover { opacity: 0.8; }
 </style>
 {% endblock %}
+=======
+<section class="bg-blue-600 text-white py-12">
+    <div class="container mx-auto px-4 text-center">
+        <h2 class="text-3xl font-bold mb-4">Need Custom Ceiling Design?</h2>
+        <p class="mb-6">Contact us today to discuss your unique requirements!</p>
+        <a href="/contact" class="inline-block px-6 py-3 bg-white text-blue-600 rounded hover:bg-gray-100">
+            Contact Us Now
+        </a>
+    </div>
+</section>
+{% endblock %}
+>>>>>>> 31933a6aed56f036f217f6b67518393184056343
