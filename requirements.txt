@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 asgiref==3.9.1
 Django==5.2.4
 django-tailwind==4.2.0
@@ -18,5 +18,3 @@ gunicorn==22.0.0
 
 
 
-
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
