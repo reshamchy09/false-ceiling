@@ -1,9 +1,8 @@
 from django.contrib import admin
 from .models import *
-<<<<<<< HEAD
 from django.utils.html import format_html
 
-=======
+
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
@@ -11,7 +10,7 @@ class ServiceAdmin(admin.ModelAdmin):
     list_filter = ['category', 'is_active', 'created_at']
     search_fields = ['name', 'description']
     list_editable = ['is_active']
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
+
 
 @admin.register(MyServices)
 class MyServicesAdmin(admin.ModelAdmin):
@@ -37,8 +36,8 @@ class TestimonialAdmin(admin.ModelAdmin):
         queryset.update(is_approved=True)
     approve_testimonials.short_description = "Approve selected testimonials"
 
-<<<<<<< HEAD
-=======
+
+
 @admin.register(ContactMessage)
 class ContactMessageAdmin(admin.ModelAdmin):
     list_display = ['full_name', 'email', 'subject', 'is_responded', 'created_at']
@@ -49,7 +48,7 @@ class ContactMessageAdmin(admin.ModelAdmin):
 class EstimateRequestAdmin(admin.ModelAdmin):
     list_display = ['full_name', 'ceiling_type', 'estimated_cost', 'created_at']
     list_filter = ['ceiling_type', 'quality', 'created_at']
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
+
 
 @admin.register(BlogPost)
 class BlogPostAdmin(admin.ModelAdmin):
@@ -63,7 +62,7 @@ class FAQAdmin(admin.ModelAdmin):
     list_display = ['question', 'category', 'order', 'is_active']
     list_filter = ['category', 'is_active']
     ordering = ['order']
-<<<<<<< HEAD
+
 
 @admin.register(LocationPrice)
 class LocationPriceAdmin(admin.ModelAdmin):
@@ -155,5 +154,4 @@ class CommentAdmin(admin.ModelAdmin):
     list_filter = ("created_at", "post")
     search_fields = ("name", "email", "body")
     ordering = ("-created_at",)
-=======
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
+

@@ -11,13 +11,12 @@ urlpatterns = [
     path('testimonials/', views.testimonials, name='testimonials'),
     path('blog/', views.blog, name='blog'),
     path('blog/<slug:slug>/', views.blog_detail, name='blog_detail'),
-<<<<<<< HEAD
      path("blog/<slug:slug>/comment/", views.add_comment, name="add_comment"),  
     path('faq/', views.faq, name='faq'),
    # path('api/chat/', views.chat_api, name='chat_api'),
-=======
+
     path('faq/', views.faq, name='faq'),
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
+
 
 
     path('login/', views.login_view, name='login'),

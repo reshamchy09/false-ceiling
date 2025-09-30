@@ -2,8 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
 
-<<<<<<< HEAD
-=======
+
 class Service(models.Model):
     CATEGORY_CHOICES = [
         ('tile', 'Tile'),
@@ -20,7 +19,7 @@ class Service(models.Model):
     price_per_sqft = models.DecimalField(max_digits=8, decimal_places=2)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
+
 
 class MyServices(models.Model):
     CATEGORIES = [
@@ -41,7 +40,7 @@ class MyServices(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     is_featured = models.BooleanField(default=False)
 
-<<<<<<< HEAD
+
     def __str__(self):
         return self.title  
 
@@ -55,8 +54,7 @@ class LocationPrice(models.Model):
 
     def __str__(self):
         return f"{self.location} (+{self.additional_price})"
-=======
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
+
 
 
 class Project(models.Model):
@@ -92,7 +90,7 @@ class Testimonial(models.Model):
     def __str__(self):
         return f"{self.name} - {self.rating} stars"
 
-<<<<<<< HEAD
+
 
 
 class BlogCategory(models.Model):
@@ -109,7 +107,7 @@ class BlogCategory(models.Model):
     def post_count(self):
         return self.blogpost_set.filter(is_published=True).count()
 
-=======
+
 class ContactMessage(models.Model):
     full_name = models.CharField(max_length=100)
     email = models.EmailField()
@@ -150,14 +148,14 @@ class EstimateRequest(models.Model):
     
     def __str__(self):
         return f"Estimate - {self.ceiling_type} - Rs. {self.estimated_cost}"
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
+
 
 class BlogPost(models.Model):
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
     content = models.TextField()
     excerpt = models.TextField(max_length=300)
-<<<<<<< HEAD
+
     image = models.ImageField(upload_to='blog/', blank=True, null=True)  # Renamed from featured_image
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     category = models.ForeignKey(BlogCategory, on_delete=models.SET_NULL, null=True, blank=True)
@@ -169,18 +167,18 @@ class BlogPost(models.Model):
     
     class Meta:
         ordering = ['-created_at']
-=======
+
     featured_image = models.ImageField(upload_to='blog/')
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     is_published = models.BooleanField(default=False)
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
+
     
     def __str__(self):
         return self.title
 
-<<<<<<< HEAD
+
 
 class BlogTag(models.Model):
     name = models.CharField(max_length=50)
@@ -201,8 +199,7 @@ class Comment(models.Model):
         return f"Comment by {self.name}"
 
 
-=======
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
+
 class FAQ(models.Model):
     question = models.CharField(max_length=300)
     answer = models.TextField()
@@ -214,7 +211,7 @@ class FAQ(models.Model):
         ordering = ['order', 'id']
     
     def __str__(self):
-<<<<<<< HEAD
+
         return self.question
     
 
@@ -240,6 +237,6 @@ class ContactServiceSelection(models.Model):
 
     def __str__(self):
         return f"{self.submission.full_name} - {self.service.title}"
-=======
+
         return self.question
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
+
