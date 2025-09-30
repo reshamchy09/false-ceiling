@@ -4,7 +4,6 @@
 {% block meta_description %}Explore our portfolio of completed false ceiling projects in Dhangadhi, Nepal. View stunning designs in Gypsum, POP, PVC, Wooden, and more.{% endblock %}
 
 {% block content %}
-<<<<<<< HEAD
 <!-- Modern Hero Header with Gradient -->
 <section class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 100px 0 80px;">
     <div class="container text-center position-relative">
@@ -14,23 +13,11 @@
             <a href="{% url 'index' %}" class="text-decoration-none text-white me-2 hover-opacity">Home</a>
             <span class="text-white-50 mx-2">›</span>
             <span class="text-white">Portfolio</span>
-=======
-<!-- Page Header -->
-<section class="bg-light py-5">
-    <div class="container text-center">
-        <h1 class="display-4 fw-bold gradient-text mb-3 text-shadow" data-aos="fade-up">Project Gallery</h1>
-        <nav aria-label="breadcrumb" data-aos="fade-up" data-aos-delay="100">
-            <ol class="breadcrumb justify-content-center bg-transparent">
-                <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-primary text-decoration-none">Home</a></li>
-                <li class="breadcrumb-item active text-warning" aria-current="page">Portfolio</li>
-            </ol>
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
         </nav>
     </div>
 </section>
 
 <!-- Portfolio Section -->
-<<<<<<< HEAD
 <section class="py-5 bg-light">
     <div class="container py-4">
 
@@ -79,43 +66,10 @@
                         <h5 class="fw-bold mb-2">{{ project.title }}</h5>
                         <p class="text-muted small mb-1"><i class="fas fa-map-marker-alt me-1 text-primary"></i>{{ project.location }}</p>
                         <p class="text-muted small mb-2"><i class="fas fa-calendar-alt me-1 text-primary"></i>{{ project.completed_date|date:"F d, Y" }}</p>
-=======
-<section class="section-padding bg-white">
-    <div class="container">
-        <!-- Filter Tabs -->
-        <div class="d-flex justify-content-center mb-5" data-aos="fade-up">
-            <ul class="nav nav-pills gap-2" id="portfolioTabs" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link px-4 py-2 rounded-pill {% if selected_category == 'all' %}active{% endif %}" href="?category=all" role="tab">All</a>
-                </li>
-                {% for category_value, category_name in categories %}
-                <li class="nav-item">
-                    <a class="nav-link px-4 py-2 rounded-pill {% if selected_category == category_value %}active{% endif %}" href="?category={{ category_value }}" role="tab">{{ category_name }}</a>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-
-        <!-- Portfolio Grid -->
-     <div class="tab-content" id="portfolioTabContent">
-    <div class="tab-pane fade show active" id="all" role="tabpanel">
-        <div class="row g-4 masonry-grid">
-            {% for project in projects %}
-            <div class="col-md-6 col-lg-4 masonry-item" data-aos="fade-up" data-aos-delay="{% cycle '0' '100' '200' %}">
-                <div class="card card-hover">
-                    <img src="{{ project.image.url }}" class="card-img-top" alt="{{ project.title }}">
-                    <div class="card-body text-center">
-                        <h5 class="fw-bold">Title: {{  project.title }}</h5>
-                        <p class="mb-2">Location: {{ project.location }}</p>
-                        <p class="mb-2">Material Used: {{ project.material_used }}</p>
-                        <p class="mb-3">Date: {{ project.completed_date|date:"F d, Y" }}</p>
-                        <a href="{{ project.image.url }}" class="btn btn-primary-custom btn-sm" data-lightbox="portfolio" data-title="{{ project.title }}">View Full Image</a>
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
                     </div>
                 </div>
             </div>
             {% empty %}
-<<<<<<< HEAD
             <div class="col-12 text-center py-5">
                 <p class="text-muted fs-5">No projects found for this category.</p>
             </div>
@@ -139,42 +93,12 @@
                        style="{% if projects.number == num %}background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);{% endif %}">
                         {{ num }}
                     </a>
-=======
-            <div class="col-12 text-center">
-                <p>No projects found for this category.</p>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-</div>
-
-        <!-- Pagination -->
-        {% if projects.has_other_pages %}
-        <nav aria-label="Page navigation" class="mt-5">
-            <ul class="pagination justify-content-center">
-                {% if projects.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?category={{ selected_category }}&page={{ projects.previous_page_number }}" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% for num in projects.paginator.page_range %}
-                <li class="page-item {% if projects.number == num %}active{% endif %}">
-                    <a class="page-link" href="?category={{ selected_category }}&page={{ num }}">{{ num }}</a>
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
                 </li>
                 {% endfor %}
                 {% if projects.has_next %}
                 <li class="page-item">
-<<<<<<< HEAD
                     <a class="page-link border-0 rounded-circle shadow-sm" 
                        href="?category={{ selected_category }}&page={{ projects.next_page_number }}">→</a>
-=======
-                    <a class="page-link" href="?category={{ selected_category }}&page={{ projects.next_page_number }}" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
                 </li>
                 {% endif %}
             </ul>
@@ -184,27 +108,15 @@
 </section>
 
 <!-- Testimonials Section -->
-<<<<<<< HEAD
 <section class="py-5 bg-white">
-=======
-<!-- Testimonials Section -->
-<section class="section-padding bg-light">
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
     <div class="container">
         <h2 class="display-5 fw-bold text-center mb-5 gradient-text" data-aos="fade-up">What Our Clients Say</h2>
         <div class="row g-4">
             {% for testimonial in testimonials %}
-<<<<<<< HEAD
             <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:'50' }}">
                 <div class="p-4 shadow-sm rounded bg-light h-100">
                     <p class="text-muted mb-3">"{{ testimonial.message }}"</p>
                     <div class="d-flex align-items-center">
-=======
-            <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="{% cycle '0' '100' '200' %}">
-                <div class="testimonial-card">
-                    <p class="text-muted">"{{ testimonial.message }}"</p>
-                    <div class="d-flex align-items-center mt-3">
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
                         {% if testimonial.image %}
                         <img src="{{ testimonial.image.url }}" alt="{{ testimonial.name }}" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
                         {% endif %}
@@ -214,11 +126,7 @@
                             <p class="text-muted small mb-0">{{ testimonial.location }}</p>
                             {% endif %}
                             <div class="star-rating">
-<<<<<<< HEAD
                                 {% for i in "12345" %}
-=======
-                                {% for i in '12345' %}
->>>>>>> 31933a6aed56f036f217f6b67518393184056343
                                 <i class="fas fa-star {% if i|add:0 <= testimonial.rating %}text-warning{% else %}text-muted{% endif %}"></i>
                                 {% endfor %}
                             </div>
@@ -236,7 +144,6 @@
 </section>
 
 <!-- CTA Section -->
-<<<<<<< HEAD
 <section class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 100px 0;">
     <div class="container text-center position-relative">
         <h2 class="display-5 fw-bold text-white mb-4" data-aos="zoom-in">Want a Design Like This?</h2>
@@ -254,53 +161,3 @@
     .page-link:hover { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%) !important; color: #fff !important; transform: scale(1.1); }
 </style>
 {% endblock %}
-=======
-<section class="gradient-bg text-white text-center section-padding">
-    <div class="container">
-        <h2 class="display-5 fw-bold mb-4" data-aos="fade-up">Want a Design Like This?</h2>
-        <p class="lead mb-4" data-aos="fade-up" data-aos-delay="100">Transform your space with our expert false ceiling solutions tailored to your vision.</p>
-        <a href="{% url 'contact' %}" class="btn btn-primary-custom btn-lg pulse-glow" data-aos="fade-up" data-aos-delay="200">Contact Us Now</a>
-    </div>
-</section>
-{% endblock %}
-
-{% block extra_js %}
-<!-- Lightbox2 for image zoom -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/js/lightbox.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css">
-
-<script>
-    // Initialize AOS animations
-    AOS.init();
-
-    // Initialize Masonry layout
-    document.addEventListener('DOMContentLoaded', function () {
-        const grids = document.querySelectorAll('.masonry-grid');
-        grids.forEach(grid => {
-            new Masonry(grid, {
-                itemSelector: '.masonry-item',
-                columnWidth: '.col-md-6',
-                percentPosition: true,
-                gutter: 24
-            });
-        });
-    });
-</script>
-
-<!-- Masonry CSS for hover effect -->
-<style>
-    .hover-opacity-100 {
-        opacity: 1;
-    }
-    .transition-opacity {
-        transition: opacity 0.3s ease;
-    }
-    .masonry-grid {
-        margin: 0 auto;
-    }
-    .masonry-item {
-        margin-bottom: 24px;
-    }
-</style>
-{% endblock %}
->>>>>>> 31933a6aed56f036f217f6b67518393184056343

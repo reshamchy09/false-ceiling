@@ -3,15 +3,6 @@ from .models import *
 from django.utils.html import format_html
 
 
-
-@admin.register(Service)
-class ServiceAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category', 'price_per_sqft', 'is_active', 'created_at',]
-    list_filter = ['category', 'is_active', 'created_at']
-    search_fields = ['name', 'description']
-    list_editable = ['is_active']
-
-
 @admin.register(MyServices)
 class MyServicesAdmin(admin.ModelAdmin):
     list_display = ['title', 'category', 'price_per_sqft', 'is_active', 'created_at', 'is_featured',]
@@ -37,19 +28,6 @@ class TestimonialAdmin(admin.ModelAdmin):
     approve_testimonials.short_description = "Approve selected testimonials"
 
 
-
-@admin.register(ContactMessage)
-class ContactMessageAdmin(admin.ModelAdmin):
-    list_display = ['full_name', 'email', 'subject', 'is_responded', 'created_at']
-    list_filter = ['is_responded', 'created_at']
-    search_fields = ['full_name', 'email', 'subject']
-
-@admin.register(EstimateRequest)
-class EstimateRequestAdmin(admin.ModelAdmin):
-    list_display = ['full_name', 'ceiling_type', 'estimated_cost', 'created_at']
-    list_filter = ['ceiling_type', 'quality', 'created_at']
-
-
 @admin.register(BlogPost)
 class BlogPostAdmin(admin.ModelAdmin):
     list_display = ['title', 'author', 'is_published', 'created_at']
@@ -62,7 +40,6 @@ class FAQAdmin(admin.ModelAdmin):
     list_display = ['question', 'category', 'order', 'is_active']
     list_filter = ['category', 'is_active']
     ordering = ['order']
-
 
 @admin.register(LocationPrice)
 class LocationPriceAdmin(admin.ModelAdmin):
@@ -154,4 +131,3 @@ class CommentAdmin(admin.ModelAdmin):
     list_filter = ("created_at", "post")
     search_fields = ("name", "email", "body")
     ordering = ("-created_at",)
-

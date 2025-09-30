@@ -14,33 +14,6 @@ from django.db.models import Q
 
 
 
-from app.models import Project, Testimonial, ContactMessage, EstimateRequest, BlogPost, FAQ,MyServices
-from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login, logout
-
-
-# Forms for validation
-class ContactForm(forms.ModelForm):
-    class Meta:
-        model = ContactMessage
-        fields = ['full_name', 'email', 'phone', 'subject', 'message']
-
-class EstimateForm(forms.Form):
-    length = forms.DecimalField(min_value=0.1, max_digits=10, decimal_places=2)
-    width = forms.DecimalField(min_value=0.1, max_digits=10, decimal_places=2)
-    ceiling_type = forms.ChoiceField(choices=[
-        ('gypsum', 'Gypsum'), ('pop', 'POP'), ('pvc', 'PVC'),
-        ('wooden', 'Wooden'), ('metal', 'Metal')
-    ])
-    quality = forms.ChoiceField(choices=[
-        ('basic', 'Basic'), ('standard', 'Standard'), ('premium', 'Premium')
-    ])
-    include_lights = forms.BooleanField(required=False)
-    location = forms.CharField(max_length=200, required=False)
-    full_name = forms.CharField(max_length=100, required=False)
-    phone = forms.CharField(max_length=20, required=False)
-
-
 class TestimonialForm(forms.ModelForm):
     class Meta:
         model = Testimonial
@@ -61,9 +34,6 @@ def index(request):
     return render(request, 'index.html', context)
 def about(request):
     return render(request, 'about.html')
-
-
-from django.core.paginator import Paginator
 
 
 def myservices(request):
@@ -313,31 +283,9 @@ def add_comment(request, slug):
     return redirect("blog_detail", slug=post.slug)
 
 
-def blog(request):
-    posts = BlogPost.objects.filter(is_published=True).order_by('-id')
-    if not posts.exists():
-        messages.info(request, 'No blog posts available.')
-    
-    paginator = Paginator(posts, 6)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    return render(request, 'blog.html', {'page_obj': page_obj})
-
-def blog_detail(request, slug):
-    post = get_object_or_404(BlogPost, slug=slug, is_published=True)
-    recent_posts = BlogPost.objects.filter(is_published=True).exclude(id=post.id).order_by('-id')[:3]
-    
-    return render(request, 'blog_detail.html', {
-        'post': post,
-        'recent_posts': recent_posts
-    })
-
-
 def faq(request):
     faqs = FAQ.objects.filter(is_active=True).order_by('question')
     return render(request, 'faq.html', {'faqs': faqs})
-
 
 
 
@@ -373,7 +321,6 @@ def faq(request):
 #             }, status=500)
     
 #     return JsonResponse({'error': 'Invalid request'}, status=400)
-
 
 
 
